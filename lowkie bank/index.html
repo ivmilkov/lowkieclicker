@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Lowkie Bank</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="bankApp">
+
+    <!-- sidebar (desktop) -->
+    <nav class="bk-sidebar" aria-label="Разделы">
+      <div class="bk-sidebar-brand">
+        <img src="images/monetka.png" alt="" class="bk-sidebar-coin">
+        <span>Lowkie Bank</span>
+      </div>
+      <button class="bk-navitem active" data-tab="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+        <span>Главная</span>
+      </button>
+      <button class="bk-navitem" data-tab="services">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Сервисы</span>
+      </button>
+      <button class="bk-navitem" data-tab="invest">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M11 19V5"/><path d="M18 19v-7"/><path d="M3 19h18"/></svg>
+        <span>Инвестиции</span>
+      </button>
+      <button class="bk-navitem" data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.6-4 5-6 8-6s6.4 2 8 6"/></svg>
+        <span>Профиль</span>
+      </button>
+    </nav>
+
+    <div class="bk-shell">
+
+      <!-- top bar -->
+      <div class="bk-topbar">
+        <div class="bk-hello">
+          <div class="bk-hello-line">С возвращением,</div>
+          <div class="bk-hello-name" id="bkNick">telegram_nik</div>
+        </div>
+        <button class="bk-bell" aria-label="Уведомления" title="Уведомления">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="bk-bell-dot"></span>
+        </button>
+      </div>
+
+      <div class="bk-main">
+
+        <!-- ================= HOME ================= -->
+        <section class="bk-page active" data-page="home">
+
+          <div class="bk-balance-wrap">
+            <div class="bk-balance-card" id="bkBalanceCard">
+              <div class="bk-balance-track" id="bkBalanceTrack">
+
+                <div class="bk-balance-face bk-face-coins">
+                  <div class="bk-balance-glow"></div>
+                  <div class="bk-balance-top">
+                    <span class="bk-balance-label">Баланс монет</span>
+                    <img src="images/monetka.png" alt="" class="bk-balance-icon">
+                  </div>
+                  <div class="bk-balance-amount" id="bkCoinsAmount">0</div>
+                  <div class="bk-balance-sub" id="bkCoinsSub">за клик 1 · энергия: 100/100</div>
+                </div>
+
+                <div class="bk-balance-face bk-face-diamonds">
+                  <div class="bk-balance-glow"></div>
+                  <div class="bk-balance-top">
+                    <span class="bk-balance-label">Баланс алмазов</span>
+                    <img src="images/diamond.png" alt="" class="bk-balance-icon">
+                  </div>
+                  <div class="bk-balance-amount" id="bkDiamondsAmount">0</div>
+                  <div class="bk-balance-sub" id="bkDiamondsSub">Доход 0 алм/час</div>
+                </div>
+
+              </div>
+              <div class="bk-balance-dots">
+                <span class="bk-dot active" data-face="0"></span>
+                <span class="bk-dot" data-face="1"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bk-actions">
+            <button class="bk-action" id="bkOpenTopup">
+              <span class="bk-action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12h14"/></svg>
+              </span>
+              <span>Пополнить</span>
+            </button>
+            <button class="bk-action" id="bkOpenTransfer">
+              <span class="bk-action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3 21 7l-4 4"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/><path d="M7 21 3 17l4-4"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>
+              </span>
+              <span>Перевести</span>
+            </button>
+            <button class="bk-action" id="bkOpenHistory">
+              <span class="bk-action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 3"/></svg>
+              </span>
+              <span>Все операции</span>
+            </button>
+          </div>
+
+          <button class="bk-lastop" id="bkOpenHistory2">
+            <span class="bk-lastop-label">Последняя операция</span>
+            <span class="bk-lastop-value" id="bkLastOp">нет операций</span>
+          </button>
+
+          <div class="bk-shortcuts">
+            <button class="bk-shortcut" data-tab="services">
+              <div class="bk-shortcut-title">Сервисы</div>
+              <div class="bk-shortcut-desc">мини-игры, улучшения, скины</div>
+            </button>
+            <button class="bk-shortcut" data-tab="invest">
+              <div class="bk-shortcut-title">Инвестиции</div>
+              <div class="bk-shortcut-desc">обменять монеты на алмазы</div>
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ================= SERVICES ================= -->
+        <section class="bk-page" data-page="services">
+          <div class="bk-subnav" id="bkServicesNav">
+            <button class="bk-pill active" data-svc="games">мини-игры</button>
+            <button class="bk-pill" data-svc="upgrades">улучшения</button>
+          </div>
+
+          <div class="bk-panelbox" id="bkGamesSlot"></div>
+          <div class="bk-panelbox" id="bkUpgradesSlot" style="display:none"></div>
+        </section>
+
+        <!-- ================= INVEST ================= -->
+        <section class="bk-page" data-page="invest">
+          <div class="bk-invest-card">
+            <div class="bk-invest-head">
+              <div>
+                <div class="bk-invest-pair">АЛМАЗЫ / LOWKCOIN</div>
+                <div class="bk-invest-note">торговать на бирже</div>
+              </div>
+              <div class="bk-invest-price" id="bkInvestPrice">—</div>
+            </div>
+            <div class="bk-invest-balances">
+              <div class="bk-invest-bal">
+                <img src="images/monetka.png" alt="">
+                <span id="bkInvestCoins">0</span>
+              </div>
+              <div class="bk-invest-bal">
+                <img src="images/diamond.png" alt="">
+                <span id="bkInvestDiamonds">0</span>
+              </div>
+            </div>
+            <button class="bk-invest-btn" id="bkOpenMarket">торговать</button>
+          </div>
+
+          <div class="bk-invest-card bk-invest-farm">
+            <div class="bk-invest-head">
+              <div>
+                <div class="bk-invest-pair">ферма алмазов</div>
+                <div class="bk-invest-note">пассивный доход алмазов в час</div>
+              </div>
+              <div class="bk-invest-price" id="bkDiamondRate">0/час</div>
+            </div>
+            <button class="bk-invest-btn bk-invest-btn-ghost" id="bkOpenDiamondFarm">прокачать ферму</button>
+          </div>
+        </section>
+
+        <!-- ================= PROFILE ================= -->
+        <section class="bk-page" data-page="profile">
+          <div class="bk-profile-card">
+            <div class="bk-profile-avatar">L</div>
+            <div class="bk-profile-name" id="bkProfileNick">telegram_nik</div>
+            <div class="bk-profile-rank" id="bkProfileRank">новичок лоуки</div>
+            <div class="bk-profile-progress">
+              <div class="bk-profile-progress-fill" id="bkProfileProgressFill"></div>
+            </div>
+            <div class="bk-profile-level" id="bkProfileLevel">уровень 1/12</div>
+          </div>
+
+          <div class="bk-stats-grid">
+            <div class="bk-stat"><span class="bk-stat-label">монеты</span><span class="bk-stat-value" id="bkStatCoins">0</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">алмазы</span><span class="bk-stat-value" id="bkStatDiamonds">0</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">за клик</span><span class="bk-stat-value" id="bkStatPerClick">1</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">энергия</span><span class="bk-stat-value" id="bkStatEnergy">100/100</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">пассив монет</span><span class="bk-stat-value" id="bkStatPassive">0/час</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">пассив алмазов</span><span class="bk-stat-value" id="bkStatDiamondRate">0/час</span></div>
+          </div>
+
+          <div class="bk-list">
+            <button class="bk-list-item" id="bkOpenSupport">
+              <span>служба поддержки</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button class="bk-list-item" id="bkOpenNews">
+              <span>новости</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- bottom nav (mobile) -->
+      <nav class="bk-bottomnav" aria-label="Разделы">
+        <button class="bk-navitem active" data-tab="home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+          <span>Главная</span>
+        </button>
+        <button class="bk-navitem" data-tab="services">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Сервисы</span>
+        </button>
+        <button class="bk-navitem" data-tab="invest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M11 19V5"/><path d="M18 19v-7"/><path d="M3 19h18"/></svg>
+          <span>Инвестиции</span>
+        </button>
+        <button class="bk-navitem" data-tab="profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.6-4 5-6 8-6s6.4 2 8 6"/></svg>
+          <span>Профиль</span>
+        </button>
+      </nav>
+
+    </div>
+
+    <!-- ============ bottom sheet: top up (real tap game) ============ -->
+    <div class="bk-sheet-overlay" id="bkTopupOverlay">
+      <div class="bk-sheet" id="bkTopupSheet">
+        <div class="bk-sheet-handle"></div>
+        <div class="bk-sheet-header">
+          <div class="bk-sheet-title">Пополнить</div>
+          <button class="bk-sheet-close" id="bkCloseTopup" aria-label="закрыть">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="bk-sheet-desc">Тапай по лоуки, чтобы пополнить баланс монет</div>
+        <div class="bk-sheet-body" id="bkTapSlot"></div>
+      </div>
+    </div>
+
+    <!-- ============ bottom sheet: transfer (non-functional) ============ -->
+    <div class="bk-sheet-overlay" id="bkTransferOverlay">
+      <div class="bk-sheet" id="bkTransferSheet">
+        <div class="bk-sheet-handle"></div>
+        <div class="bk-sheet-header">
+          <div class="bk-sheet-title">Перевести</div>
+          <button class="bk-sheet-close" id="bkCloseTransfer" aria-label="закрыть">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="bk-sheet-desc">Переводы между игроками пока в разработке</div>
+        <div class="bk-sheet-body">
+          <label class="bk-field">
+            <span>Получатель</span>
+            <input type="text" placeholder="Ник игрока" disabled>
+          </label>
+          <label class="bk-field">
+            <span>Сумма</span>
+            <input type="text" placeholder="0" disabled>
+          </label>
+          <button class="bk-invest-btn bk-invest-btn-disabled" disabled>функция недоступна</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+<div id="gameRoot" aria-hidden="true">
+  <div class="top">
+    <img class="coin-icon" src="images/monetka.png" alt="coin">
+    <div class="top-col">
+      <div class="rank-line">
+        <span id="rankTitle">новичок лоуки</span>
+        <span id="levelNum">1/12</span>
+      </div>
+      <div class="progress-bar">
+        <div id="progressFill" style="width:0%;"></div>
+      </div>
+      <div class="total" id="totalTop">0</div>
+      <div class="diamond-line">
+        <img class="diamond-icon" src="images/diamond.png" alt="diamond">
+        <span id="diamondsTop">0</span> алмазов
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <button id="tab-mining" class="active">майнинг</button>
+    <button id="tab-achievements">улучшения</button>
+    <button id="tab-little">развлечения</button>
+    <button id="tab-friends">друзья</button>
+  </header>
+
+  <main>
+    <section id="mining" class="panel">
+      <div class="mining">
+        <div class="tap-card">
+          <div class="tap-img" id="tapArea" title="тапай по картинке">
+            <img src="images/lowkie.png" alt="tap target">
+          </div>
+          
+          <div class="history-widget" id="historyWidget">
+             <div class="hw-content">
+               <div class="hw-label">Последняя операция</div>
+               <div class="hw-last" id="lastOperationText">...</div>
+             </div>
+             <button class="hw-btn" id="openHistoryBtn">
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                 <path d="M12 5v14M5 12h14"/>
+               </svg>
+             </button>
+          </div>
+
+          <div class="stats">
+            <div class="line">за клик: <span class="value" id="perClick">1</span></div>
+            <div class="line" style="font-size:14px;color:var(--muted)"><img src="images/molnia.png" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"><span id="energyDisplay">100/100</span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:12px;justify-content:center">
+          <div class="ach">100 монет → +2/клик</div>
+          <div class="ach">1000 монет → +5/клик</div>
+          <div class="ach">10000 монет → +10/клик</div>
+          <div class="ach">50000 монет → +20/клик</div>
+          <div class="ach">100000 монет → +50/клик</div>
+          <div class="ach">1 000 000 монет → +100/клик</div>
+          <div class="ach">10 000 000 монет → +120/клик</div>
+          <div class="ach">100 000 000 монет → +140/клик</div>
+        </div>
+      </div>
+
+      <div class="support-widget" id="openSupportBtn" style="margin-top: 20px;">
+        <div class="sw-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </div>
+        <div class="sw-content">
+          <div class="sw-title">Служба поддержки</div>
+          <div class="sw-desc">Есть вопрос или проблема? Напишите нам или найдите ответ на уже заданный вопрос</div>
+        </div>
+        <div class="sw-arrow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+      </div>
+
+     <div class="news-widget" id="openNewsBtn" style="margin-top: 10px;">
+       <div class="nw-icon">
+         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
+      <path d="M18 14h-8"></path>
+      <path d="M15 18h-5"></path>
+      <path d="M10 6h8v4h-8V6Z"></path>
+        </div>
+      <div class="nw-content">
+    <div class="nw-title">Новости</div>
+    <div class="nw-desc">Следите за обновлениями и важными событиями проекта</div>
+        </div>
+    <div class="nw-arrow">
+         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+       </div>
+     </div>
+
+    <div class="ach" style="margin-top:20px;">
+        <strong>о проекте</strong>
+        <p>
+автор проекта:
+<a href="https://t.me/ivmilkovs" target="_blank">ivmilkov</a>.
+игра вышла в 2024 году, как шутка и изначально была очень сырой, где единственное что можно было делать, это просто тапать по картинке. очень долго в «лоукикликере» не было обновлений, и изза этого, создатель почти спустя год после создания закрыл свой проект. но недавно он открылся снова, с полностью новым дизайном, новыми механиками, новым функционалом, улучшениями и многим другим. также в этой игре нужно тапать по фото криптомонетки от создателя, но сам создатель рассказывает о своей игре не как о криптопроекте с которого можно будет заработать деньги, а как о просто игре.</p>
+      </div>
+      <div class="ach" style="margin-top:10px;">
+        <strong>как играть</strong>
+        <p>в «лоукикликере» цель — натапать как можно больше монет и прокачаться через вкладку улучшения.<br>
+одно из основных - система «за клик»: сколько монет даёт одно нажатие. её можно улучшать во вкладке «улучшения». там же есть «пассивный доход» — монеты приходят каждый час даже без игры. также в игре есть энергия, которая не дает тебе тапать сколько угодно, при натапывании определенного количества монет, количество энергии увеличивается.<br>
+помимо монет есть алмазы. пока что они особо ничего не делают, но рано или поздно станут основной валютой. тапать нельзя, только зарабатывать пассивно. во вкладке «улучшения\алмазы» можно прокачивать доход или обменивать монеты на алмазы.<br><br>
+во вкладке «развлечения» есть несколько мини-игр:<br>
+одна из них - «маленький лоуки» - за 10 секунд ловишь летающих лоуки (+5 монет за каждого, можно прокачать до +1000), но помимо лоуки летают и бомбы по которым если нажмешь то игра закончится.<br>
+есть колесо фортуны, тоже в развлечениях, где выпадают монеты, алмазы, прокачка за клик и энергия. крутить можно раз в 24 часа.<br>
+также есть скины для лоуки, они заменяют изображение по которому ты тапаешь. сейчас всего два, купить можно во вкладке улучшения\скины.<br>
+игра всё ещё в бета-тесте: нет телеграм-интеграции и реферальной системы. дальше будет больше.</p>
+      </div>
+      <div class="ach" style="margin-top:10px;">
+        <strong>что такое лоуки</strong>
+        <p>лоуки - шип "лололошка + ноуки", его придумала подруга создателя проекта, а создатель просто по приколу решил сделать тапалку и криптовалюту с лоуки.</p>
+      </div>
+      <div id="playerNick" style="text-align:center; color:var(--muted); margin-top:20px;">вы: telegram_nik</div>
+    </section>
+
+    <section id="achievements" class="panel" style="display:none">
+      <div class="subtabs">
+        <button id="sub-upgrades" class="subbtn active">улучшения</button>
+        <button id="sub-diamonds" class="subbtn">алмазы</button>
+        <button id="sub-skins" class="subbtn">скины</button>
+      </div>
+
+      <div id="upgradesWrap">
+        <div class="upgrade-card">
+          <div class="upgrade-info">
+            <strong>+20 за каждый клик</strong>
+            <div class="price">стоимость: 100 000 монет</div>
+            <div style="color:var(--muted)">за каждый клик ты получаешь на 20 монет больше</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyPlus20" class="buy-btn">купить</button>
+            <div id="upgradeHint" style="color:var(--muted)"></div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-top:12px">
+          <div class="upgrade-info">
+            <strong>маленький лоуки апгрейд</strong>
+            <div class="price">стоимость: 100 000 монет</div>
+            <div style="color:var(--muted)">после покупки каждый пойманный маленький лоуки даёт <strong>+1000</strong> монет вместо +5</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyMiniBoost" class="buy-btn">купить</button>
+            <div id="upgradeHintMini" style="color:var(--muted);"></div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-top:12px">
+          <div class="upgrade-info">
+            <strong id="passiveTitle">пассивный доход</strong>
+            <div class="price" id="passivePrice">стоимость: 100 монет</div>
+            <div style="color:var(--muted)" id="passiveDesc">прибавляет +5 монет каждый час</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyPassive" class="buy-btn">купить</button>
+            <div id="upgradeHintPassive" style="color:var(--muted);"></div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-top:12px">
+          <div class="upgrade-info">
+            <strong id="multiclickTitle">прокачка прибыли за клик</strong>
+            <div class="price" id="multiclickPrice">стоимость: 10 000 монет</div>
+            <div style="color:var(--muted)" id="multiclickDesc">добавляет +1 к прибыли за каждый клик</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyMulticlick" class="buy-btn">купить</button>
+            <div id="upgradeHintMulticlick" style="color:var(--muted);"></div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-top:12px">
+          <div class="upgrade-info">
+            <strong id="multienergyTitle">прокачка максимума энергии</strong>
+            <div class="price" id="multienergyPrice">стоимость: 1 000 монет</div>
+            <div style="color:var(--muted)" id="multienergyDesc">прибавляет +1 к максимуму энергии</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyMultienergy" class="buy-btn">купить</button>
+            <div id="upgradeHintMultienergy" style="color:var(--muted);"></div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-top:12px">
+          <div class="upgrade-info">
+            <strong id="stockExchangeTitle">биржа</strong>
+            <div class="price" id="stockExchangePrice">стоимость: 567 алмазов</div>
+            <div style="color:var(--muted)" id="stockExchangeDesc">приносит ежедневно от 1 до 100000 монет, работает 30 дней подряд, только при ежедневном заходе. если 1 день пропустить то подписка сбросится и надо заново покупать</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyStockExchange" class="buy-btn">купить</button>
+            <div id="upgradeHintStockExchange" style="color:var(--muted);"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="diamondsWrap" style="display:none; margin-top:12px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="max-width:620px">
+            <strong>ферма алмазов</strong>
+            <div style="color:var(--muted);margin-top:6px">алмазы пока что ничего не делают, но в будущем это станет основной валютой в игре. обязательно расти ферму</div>
+          </div>
+          <div class="diamond-stats">
+            <div>прибыль: <strong><span id="diamondRate">0</span> алм/час</strong></div>
+            <div id="diamondNext">следующее начисление — n/a</div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-bottom:10px; background: linear-gradient(90deg, rgba(14,203,129,0.1), rgba(11,18,32,0)); border: 1px solid rgba(14,203,129,0.2);">
+          <div class="upgrade-info">
+            <strong>Курс Алмазов/LOWKCOIN</strong>
+            <div class="price" id="miniTickerPrice">...</div>
+            <div style="color:var(--muted)">торговать на бирже</div>
+          </div>
+          <div class="skin-actions">
+            <button id="openMarketBtn" class="buy-btn" style="background: var(--green); color:#000;">торговать</button>
+          </div>
+        </div>
+        <div id="diamondUpgradesList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <div id="skinsSubWrap" style="display:none; margin-top:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+          <div>
+            <strong>скины</strong>
+            <div style="color:var(--muted);margin-top:6px">скины изменяют изображение по которому ты тапаешь. купленный скин не надо покупать повторно</div>
+          </div>
+          <div style="text-align:right">
+            <div style="color:var(--muted);margin-bottom:6px">текущий:</div>
+            <div><strong id="currentSkinName">стандартный</strong></div>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-bottom:10px">
+          <div class="skin-card-info">
+            <img class="skin-img" src="images/eikwon.jpg?size=1852x1852&quality=95&crop=0,0,1852,1852&ava=1" alt="eikwon">
+            <div class="upgrade-info">
+              <div class="skin-name">eikwon</div>
+              <div class="price">стоимость: 1 000 000 монет</div>
+              <div style="color:var(--muted)">при покупке автоматически станет активным</div>
+            </div>
+          </div>
+          <div class="skin-actions">
+            <button id="action-eikwon" class="buy-btn">купить и использовать</button>
+          </div>
+        </div>
+
+        <div class="upgrade-card" style="margin-bottom:10px">
+          <div class="skin-card-info">
+            <img class="skin-img" src="images/sorie.jpg" alt="sorie">
+            <div class="upgrade-info">
+              <div class="skin-name">sorie</div>
+              <div class="price">стоимость: 5 000 000 монет</div>
+              <div style="color:var(--muted)">при покупке автоматически станет активным</div>
+            </div>
+          </div>
+          <div class="skin-actions">
+            <button id="action-sorie" class="buy-btn">купить и использовать</button>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <button id="resetSkin" class="btn btn-start" style="padding:8px 12px">вернуть стандартный скин</button>
+          <div id="skinsHint" style="color:var(--muted)"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="friends" class="panel" style="display:none">
+      <div class="ach" style="margin-bottom:20px;">
+  <strong>реферальная система</strong>
+  <p style="color:var(--muted)">приглашай друзей в игру по твоей уникальной реферальной ссылке и получай по 100.000 монет и +1000 к прибыли в час за каждого друга. (функция в разработке и в бетатесте. нужна база данных, ее пока что нет)</p>
+  <div style="display:flex; justify-content:start; margin-top:12px;">
+    <button class="btn btn-disabled" style="cursor:not-allowed;">пригласить друга</button>
+  </div>
+</div>
+
+<div class="ach">
+  <strong>лидеры</strong>
+  <p style="color:var(--muted)">здесь отоброжаются топ игроки по балансу. соревнуйся с другими и поднимайся в рейтинге. лидеры получают специальные награды. (функция в разработке и в бетатесте. нужна база данных, ее пока что нет)</p>
+  <div id="leadersList" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;"></div>
+</div>
+    </section>
+
+    <section id="little" class="panel" style="display:none">
+      <div class="little-info ach">
+        <div>
+          <strong>маленький лоуки</strong>
+          <p style="color:var(--muted)">летают лоуки и бомбы. за 10 секунд поймай как можно больше лоуки. если нажмешь на бомбу то игра закончится. за одну поимку +5 монет. играть можно раз в час</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="startGame" class="btn btn-start">играть</button>
+          <div id="cooldownInfo" style="color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <div class="little-info ach">
+        <div>
+          <strong>колесо фортуны</strong>
+          <p style="color:var(--muted)">можно выиграть монеты, алмазы, прокачку за клик. крутить можно раз в 24 часа</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="spinBtn" class="btn btn-start">крутить</button>
+          <div id="wheelCooldown" style="color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <div class="little-info ach">
+        <div>
+          <strong>лотерея за алмазы</strong>
+          <p style="color:var(--muted)">можно купить разные лотерейные билеты за алмазы. чем больше стоит билет, тем больше ты можешь выиграть. шанс выиграть что либо 10%</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="startLottery" class="btn btn-start">играть</button>
+        </div>
+      </div>
+
+      <div class="little-info ach">
+        <div>
+          <strong>угадай число</strong>
+          <p style="color:var(--muted)">клиент загадывает число от 1 до 100. угадывай среди трёх вариантов за 5 секунд. если угадал — +столько монет, сколько число. играй бесконечно, новые раунды автоматически.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="startGuessGame" class="btn btn-start">играть</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+  <div id="cryptoTerminal" class="market-terminal">
+    <div class="market-header">
+      <button id="closeMarket" class="back-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="pair-info">
+        <div class="pair-title">АЛМАЗЫ / LOWKCOIN</div>
+        <div class="pair-price" id="marketPriceDisplay">1,763.00</div>
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <canvas id="priceChart"></canvas>
+      <div id="chartLiveIndicator" style="position: absolute; top: 10px; right: 10px; font-size: 10px; color: var(--green); background: rgba(0,0,0,0.4); padding: 4px 6px; border-radius: 4px; pointer-events: none; opacity: 1;">LIVE</div>
+    </div>
+
+    <div class="order-book">
+      <div class="book-header">
+        <span style="width:25%">Время</span>
+        <span style="width:25%;text-align:center">Адрес</span>
+        <span style="width:25%;text-align:center">Тип</span>
+        <span style="width:25%;text-align:right">Объем</span>
+      </div>
+      <div id="tradeList" class="trade-list">
+      </div>
+    </div>
+
+    <div class="trade-controls">
+       <div class="trade-tabs">
+         <button class="trade-tab active buy" id="btnBuyTab">Купить</button>
+         <button class="trade-tab sell" id="btnSellTab">Продать</button>
+       </div>
+       <div class="trade-input-area">
+          <div style="display:flex;justify-content:space-between">
+            <label>Количество (АЛМАЗЫ)</label>
+            <label style="color:#fff">Баланс: <span id="tradeWalletBalance">0</span></label>
+          </div>
+          <div class="trade-input-wrap">
+            <input type="number" id="tradeAmount" placeholder="0">
+          </div>
+          <div class="trade-max" id="setMaxAmount">Макс.</div>
+       </div>
+       <div style="font-size:12px;color:var(--muted);display:flex;justify-content:space-between;margin-top:4px;">
+         <span>Итого:</span>
+         <span id="tradeTotalCost">0 монет</span>
+       </div>
+       <button id="placeOrderBtn" class="btn btn-start place-order-btn buy">КУПИТЬ АЛМАЗЫ</button>
+    </div>
+  </div>
+
+  <div id="historyModal" class="history-modal">
+    <div class="hm-header">
+      <button id="closeHistory" class="back-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="hm-title">История операций</div>
+    </div>
+    <div class="hm-search-wrap">
+      <div class="hm-search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2">
+           <circle cx="11" cy="11" r="8"></circle>
+           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="historySearch" class="hm-search-input" placeholder="Поиск по типу, сумме...">
+      </div>
+    </div>
+    <div id="historyList" class="hm-list-container">
+    </div>
+  </div>
+
+  <div id="confirmModal">
+    <div class="confirm-box">
+      <div class="confirm-title">Подтверждение</div>
+      <div class="confirm-text">
+        Вы действительно хотите купить<br>
+        <span id="confirmItemName" class="confirm-highlight">Название</span><br>
+        за <span id="confirmItemPrice" class="confirm-price">0 монет</span>?
+      </div>
+      <div class="confirm-actions">
+        <button id="confirmYesBtn" class="confirm-btn confirm-yes">Да, купить</button>
+        <button id="confirmNoBtn" class="confirm-btn confirm-no">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+<div id="customAlertModal">
+  <div class="alert-box">
+    
+    <div class="alert-icon-wrapper">
+      <div class="alert-icon-symbol">!</div>
+    </div>
+    <h3 id="customAlertTitle">Уведомление</h3>
+    
+    <div id="customAlertMessage" class="alert-message-text">
+      Текст уведомления...
+    </div>
+
+    <button id="customAlertOkBtn">Ок</button>
+  </div>
+</div>
+
+  <div id="lotteryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:var(--panel); padding:20px; border-radius:12px; max-width:400px; width:90%; text-align:center; box-shadow:0 10px 40px rgba(2,6,23,0.6);">
+      <strong>лотерея за алмазы</strong>
+      <p style="color:var(--muted); margin:8px 0;">выберите билет и сыграйте. шанс проиграть — 90%, но можно выиграть до максимума!</p>
+      <div id="lotteryTickets" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="upgrade-card">
+          <div class="upgrade-info">
+            <strong>билет 1</strong>
+            <div class="price">стоимость: 1 алмаз</div>
+            <div style="color:var(--muted)">макс выигрыш: 10 алмазов</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyLottery1" class="buy-btn">купить и сыграть</button>
+          </div>
+        </div>
+        <div class="upgrade-card">
+          <div class="upgrade-info">
+            <strong>билет 2</strong>
+            <div class="price">стоимость: 100 алмазов</div>
+            <div style="color:var(--muted)">макс выигрыш: 1 000 алмазов</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyLottery2" class="buy-btn">купить и сыграть</button>
+          </div>
+        </div>
+        <div class="upgrade-card">
+          <div class="upgrade-info">
+            <strong>билет 3</strong>
+            <div class="price">стоимость: 1 000 алмазов</div>
+            <div style="color:var(--muted)">макс выигрыш: 10 000 алмазов</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyLottery3" class="buy-btn">купить и сыграть</button>
+          </div>
+        </div>
+        <div class="upgrade-card">
+          <div class="upgrade-info">
+            <strong>билет 4</strong>
+            <div class="price">стоимость: 10 000 алмазов</div>
+            <div style="color:var(--muted)">макс выигрыш: 1 000 000 алмазов</div>
+          </div>
+          <div class="skin-actions">
+            <button id="buyLottery4" class="buy-btn">купить и сыграть</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:10px; margin-top:12px;">
+        <button id="cancelLottery" class="btn btn-disabled">закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="wheelModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:var(--panel); padding:20px; border-radius:12px; width:340px; text-align:center; box-shadow:0 10px 40px rgba(2,6,23,0.6);">
+      <strong>колесо фортуны</strong>
+      <div class="wheel-wrap">
+        <div class="pointer"></div>
+        <svg id="wheelSvg" viewBox="0 0 320 320" class="wheel"></svg>
+      </div>
+      <div id="wheelResult" style="min-height:26px; margin-top:12px;"></div>
+      <button id="closeWheel" class="btn btn-disabled" style="margin-top:12px;">закрыть</button>
+    </div>
+  </div>
+
+  <div id="miniGameModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:var(--panel); padding:20px; border-radius:12px; width:740px; text-align:center; box-shadow:0 10px 40px rgba(2,6,23,0.6);">
+      <strong>маленький лоуки</strong>
+      <div id="gameWrap">
+        <div class="game-area" id="gameArea"></div>
+        <div class="hud">
+          <div class="timer">время: <span id="timeLeft">10</span>s</div>
+          <div>поймано: <span class="caught" id="caught">0</span></div>
+          <div>награда: <strong id="perCatchReward">+5 монет</strong> за поимку</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="guessGameModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center;">
+    <div style="background:var(--panel); padding:20px; border-radius:12px; width:740px; text-align:center; box-shadow:0 10px 40px rgba(2,6,23,0.6);">
+      <strong>угадай число</strong>
+      <div id="guessGameWrap">
+        <div class="guess-game-area" id="guessGameArea">
+          <div class="guess-timer">время: <span id="guessTimeLeft">5</span>s</div>
+          <div class="guess-options" id="guessOptions"></div>
+          <div class="timeout-bar" id="timeoutBar">
+            <div class="fill"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="closeGuessGame" class="btn btn-disabled">закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="stockExchangeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:101; align-items:center; justify-content:center;">
+    <div style="background:var(--panel); padding:20px; border-radius:12px; width:300px; text-align:center; box-shadow:0 10px 40px rgba(2,6,23,0.6);">
+      <strong>биржа работает на тебя!</strong>
+      <p style="margin:12px 0; color:var(--accent);">сегодня принесла: <strong id="stockExchangeAmount">0</strong> монет</p>
+      <button id="closeStockExchange" class="btn btn-start">ок</button>
+    </div>
+  </div>
+
+  <div id="supportModal" class="history-modal">
+    <div class="hm-header">
+      <button id="closeSupport" class="back-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="hm-title">Служба поддержки</div>
+    </div>
+    
+    <div class="hm-list-container" style="padding-top:10px">
+      <div class="support-section-title">FAQ (Часто задаваемые вопросы)</div>
+      <div class="faq-list">
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Будет ли "листинг" в игре?</summary>
+                <div class="faq-answer">Нет, это просто игра и никакого вывода средств не будет.</div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Связана ли игра с криптовалютой?</summary>
+                <div class="faq-answer">Нет, это просто обычная игра, но от создателя криптовалюты Лоукикойн.</div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Почему с одного аккаунта в Телеграме на разных устройствах разный прогресс? Почему не работает реферальная система и топ игроков?</summary>
+                <div class="faq-answer">Игра пока что никак не интегрирована с Телеграмом и у неё нет базы данных. Весь прогресс сейчас сохраняется локально, а не на аккаунт в Телеграм.</div>
+            <details>
+                <summary class="faq-question">Планируется ли интеграция с телеграмом?</summary>
+                <div class="faq-answer">Да, в будущем мы обязательно это реализуем, это даже одна из главных целей нашего проекта, просто сейчас мы не знаем как это реализовать.</div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Какой вообще смысл этой игры?</summary>
+                <div class="faq-answer">Смысл просто тапать и прокачиваться! Ради того чтобы улучшить своего "Лоуки".</div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Зачем нужны алмазы? В чём вообще смысл двух валют в игре?</summary>
+                <div class="faq-answer">В будущем алмазы станут основной валютой в игре, а монеты нужны будут только чтобы купить алмазы. </div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Почему в истории операций написано, что пассивный доход приходит не каждый час, а только когда ты в игре?</summary>
+                <div class="faq-answer">Это не баг. История операций работает так, что она показывает действия только когда ты онлайн. И поэтому если прошло например 2 часа и ты не в игре, ты заходишь в игру и видишь историю пассива за 2 часа одной транзакцией.</div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">Почему цена алмазов меняется почти каждую секунду, и транзакции с ними происходят также часто? В игре же совсем мало игроков</summary>
+                <div class="faq-answer">В игре нет базы данных, и курс алмазов тоже не настоящий. Это не криптомонета и её цена не растет/падает от реальных покупок/продаж. Все транзакции с алмазом виртуальные и они просто показываются слишком часто.</div>
+            </details>
+        </div>
+        <div class="faq-item">
+            <details>
+                <summary class="faq-question">В чём смысл скинов в игре?</summary>
+                <div class="faq-answer">Ни в чём, они просто заменяют картинку по которой ты тапаешь и могут понравиться тем кто знает что изображено на скинах. В будущем мы возможно добавим новые скины!</div>
+            </details>
+        </div>
+      </div>
+<div class="ai-trigger-area">
+  <button id="aiTriggerBtn" class="ai-btn-trigger">
+    <div class="ai-trigger-icon">
+       <span style="font-size:24px;">🤖</span>
+    </div>
+    <div class="ai-trigger-text">
+       <div class="ai-title">Лоуки Бот-помощник</div>
+       <div class="ai-desc">Если вы не нашли ответ на свой вопрос, вы также можете пообщаться с нашим ИИ ассистентом.</div>
+    </div>
+  </button>
+</div>
+
+<div id="aiModal" class="ai-modal-overlay">
+  <div class="ai-modal-content">
+    <button id="closeAiBtn" class="ai-close-btn">×</button>
+    
+    <div class="ai-avatar-container">
+      <img src="images\lowkiebot.png" alt="Lowkie Bot" class="ai-avatar-img">
+    </div>
+
+    <div class="ai-chat-bubble">
+       <div class="ai-name-label">Лоуки Бот-помощник</div>
+       <div id="aiMessage" class="ai-typing-text"></div>
+    </div>
+  </div>
+</div>
+
+      <div class="support-section-title">Если вы не нашли ответ на свой вопрос, и ИИ ассистент вам не помог, вы также можете написать в поддержку</div>
+      <form id="supportForm" class="support-form">
+        <input type="text" id="supportSubject" class="sp-input" placeholder="Тема (например: Баг с энергией)" required>
+        <textarea id="supportMessage" class="sp-input sp-textarea" placeholder="Опишите ваш вопрос или проблему..." required></textarea>
+        
+        <label for="supportFile" class="file-upload-label">
+           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+           Прикрепить файлы (макс. 10)
+        </label>
+        <input type="file" id="supportFile">
+        <button type="submit" class="sp-submit-btn">Отправить</button>
+      </form>
+
+      <div class="support-section-title">Ваши обращения</div>
+      <div id="ticketsList">
+      </div>
+      <div style="height:40px"></div>
+    </div>
+  </div>
+
+<div id="newsModal" class="history-modal">
+  <div class="hm-header">
+    <button id="closeNews" class="back-arrow">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <div class="hm-title">Новости</div>
+  </div>
+  
+  <div class="hm-list-container" style="padding-top:10px">
+    <div class="news-item">
+        <div class="news-header">
+            <span class="news-subject">🔥 Обновление в лоуки кликере</span>
+            <span class="news-status status-update">v2.5</span>
+        </div>
+        <div class="news-msg">
+            Основные нововедения:<br><br>
+            🔹 Вместо скучного обменника на алмазы добавили аналог крипто-курса алмазов. Стоимость, покупки и продажи можно отслеживать в реальном времени, но пока что они виртуальные.<br><br>
+            🔹 Добавлен налог, теперь не весь пассивный доход монет и алмазов приходит игроку, игра забирает 10%<br><br>
+            🔹 Добавлено подтверждение всех покупок в игре (улучшения, скины итд. Это предотвратит случайные покупки.<br><br>
+            🔹 Появилась история операций. Транзакции до её появления не засчитываются и начинаются с момента как игрок зашёл в игру после добавления.<br><br>
+            🔹 Появился раздел Служба Поддержки. В нём можно написать в поддержку или найти ответы на некоторые уже заданные вопросы (FAQ). Там же можно пообщаться с ИИ ассистентом, но говорят он немного ленивый...<br><br>
+            🔹 Появился раздел Новости. Тут будут выходить подробные описания обновлений в игре, важные события и так далее<br><br><br>
+
+            Прочие изменения:<br><br>
+            🔸 Уведомления в развлечениях (итоги игры в маленького лоуки, колесо фортуны) теперь не от браузера, а от отдельного окна в игре<br><br>
+            🔸 Сделали оформление в разделе "Как играть". Теперь новые заголовки начинаются с новой строчки<br><br>
+            🔸 Исправили колесо фортуны, теперь когда его крутишь в нём показывается то что тебе реально выпало, а не рандом<br><br>
+            🔸 Исправлен баг с игрой Угадай число. Теперь когда ты его закрываешь КД не пропадает, и всё работает корректно<br><br>
+            🔸 Теперь биржа реально дает доход если заходить каждый день в игру. Раньше можно было пропускать дни и подписка всё равно не сбрасывалась<br><br><br>
+- Всё еще нет интеграции в Телеграм, и изза этого на разных устройствах прогресс разный
+            <br><br>
+        </div>
+        <div class="news-date">16.02.2026 16:26</div>
+    </div>
+  </div>
+</div>
+<script src="script.js"></script>
+<script src="bank.js"></script>
+</body>
+</html>
