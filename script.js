@@ -313,6 +313,7 @@
           const parsed = JSON.parse(raw);
           state.total = Number(parsed.total)||0;
           state.nickname = parsed.nickname || 'telegram_nik';
+          if(parsed.refs && typeof parsed.refs === 'object') state.refs = parsed.refs; // рефералы (ведёт сервер)
           state.bonus = Number(parsed.bonus)||0;
           state.upgrades = parsed.upgrades && typeof parsed.upgrades==='object' ? parsed.upgrades : { plus20:false, miniBoost:false };
           if(typeof state.upgrades.plus20 !== 'boolean') state.upgrades.plus20 = false;
@@ -415,7 +416,7 @@
 
     // монеты за поимку маленького лоуки
     function getMiniReward(){
-      return (state.upgrades && state.upgrades.miniBoost) ? 1000 : 5;
+      return (state.upgrades && state.upgrades.miniBoost) ? 1000 : 100;
     }
 
     function getMaxEnergy(){
@@ -482,18 +483,27 @@
     function getPassivePerHour(){
       return PASSIVE_RATES[state.passive?.level || 0] || 0;
     }
+    // +1000/час за каждого друга по реферальной системе (налог не берётся)
+    function getRefPerHour(){
+      return Math.max(0, Math.trunc(Number(state.refs && state.refs.units) || 0)) * 1000;
+    }
+    function getPassiveNetPerHour(){
+      const r = getPassivePerHour();
+      return r - Math.floor(r * TAX_RATE) + getRefPerHour();
+    }
     function accruePassiveIfDue(skipSave){
       const cph = getPassivePerHour();
+      const refH = getRefPerHour();
       if(!state.passive) state.passive = { level:0, lastTs: Date.now() };
       if(!state.passive.lastTs) state.passive.lastTs = Date.now();
-      if(cph <= 0) return;
+      if(cph <= 0 && refH <= 0) return;
       const now = Date.now();
       const elapsed = now - state.passive.lastTs;
       const hours = Math.floor(elapsed / 3600000);
       if(hours > 0){
         const grossIncome = hours * cph;
         const tax = Math.floor(grossIncome * TAX_RATE);
-        const netIncome = grossIncome - tax;
+        const netIncome = grossIncome - tax + hours * refH;
 
         state.total += netIncome;
         state.passive.lastTs = state.passive.lastTs + hours * 3600000;
@@ -505,7 +515,7 @@
       }
     }
     function passiveSecsToNext(){
-      const cph = getPassivePerHour();
+      const cph = getPassivePerHour() + getRefPerHour();
       if(cph <= 0) return 0;
       const last = state.passive?.lastTs || Date.now();
       const diff = 3600000 - (Date.now() - last);
@@ -843,7 +853,7 @@
       const level = state.passive?.level || 0;
       const maxed = level >= PASSIVE_MAX_LEVEL;
       const currentRate = getPassivePerHour();
-      const currentNetRate = currentRate - Math.floor(currentRate * TAX_RATE); // чистая прибыль
+      const currentNetRate = getPassiveNetPerHour(); // чистая прибыль (с учётом друзей)
 
       const nextLevel = level + 1;
       const nextRate = PASSIVE_RATES[nextLevel] || 0;
@@ -866,7 +876,7 @@
         buyPassiveBtn.textContent = affordable ? 'купить' : 'недостаточно монет';
         buyPassiveBtn.classList.toggle('disabled', !affordable);
         buyPassiveBtn.disabled = !affordable;
-        if(level > 0){
+        if(level > 0 || getRefPerHour() > 0){
           upgradeHintPassive.textContent = `сейчас: +${formatNum(currentNetRate)} монет/час (чистыми)`;
         }else{
           upgradeHintPassive.textContent = affordable ? '' : `нужно ещё ${formatNum(Math.max(0, nextCost - state.total))} монет`;
@@ -940,13 +950,13 @@
     function refreshPassiveTimer(){
       if(upgradeHintPassive){
         const level = state.passive?.level || 0;
-        if(level > 0){
+        if(level > 0 || getRefPerHour() > 0){
           const secs = passiveSecsToNext();
           const h = Math.floor(secs/3600);
           const m = Math.floor((secs%3600)/60);
           const s = secs%60;
           const currentRate = getPassivePerHour();
-          const netRate = currentRate - Math.floor(currentRate * TAX_RATE);
+          const netRate = getPassiveNetPerHour();
 
           upgradeHintPassive.textContent = `прибыль: +${formatNum(netRate)} монет/час (чистыми), налог 10%.\nслед. начисление через ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }

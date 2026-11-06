@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>админ панель</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    body { font-family:Inter, ui-sans-serif, system-ui, -apple-system,"Segoe UI",Roboto,Arial; background:#0f1724; color:#fff; text-align:center; padding:16px; margin:0; }
+    input, button { padding:10px; margin:6px; border-radius:8px; border:none; font-size:14px; }
+    button { cursor:pointer; background:#ffd166; font-weight:bold; }
+    input[type="number"], input[type="text"] { width:min(300px, 88%); box-sizing:border-box; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    button.ghost { background:rgba(255,255,255,0.08); color:#fff; }
+    #panel { display:none; margin-top:4px; max-width:760px; margin-left:auto; margin-right:auto; }
+    .row { margin:8px 0; }
+    .small { color:#9aa6b2; font-size:13px; }
+    .danger { background:#ff6b6b; color:#071226; }
+    .muted { color:#9aa6b2; font-size:13px; display:block; margin-top:6px; }
+    #mode { color:#9aa6b2; font-size:12px; margin-bottom:12px; }
+    h2 { margin:8px 0 4px; }
+    h3 { margin:10px 0 4px; }
+
+    /* главный экран: меню как в настройках телефона */
+    #menu { max-width:520px; margin:18px auto 0; display:flex; flex-direction:column; gap:12px; }
+    .mrow { display:flex; align-items:center; gap:14px; width:100%; margin:0; padding:14px 14px; text-align:left;
+            background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; color:#fff;
+            font-weight:normal; transition:background .2s, transform .1s; }
+    .mrow:active { transform:scale(0.98); background:rgba(255,255,255,0.08); }
+    .mrow .ico { width:48px; height:48px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+    .mrow[data-tab="home"] .ico { background:linear-gradient(135deg,#4da6ff,#0066cc); }
+    .mrow[data-tab="boost"] .ico { background:linear-gradient(135deg,#ffd166,#ff9f43); }
+    .mrow[data-tab="treasury"] .ico { background:linear-gradient(135deg,#2ecc9a,#0f9d78); }
+    .mrow[data-tab="tickets"] .ico { background:linear-gradient(135deg,#b07cff,#7a4dde); }
+    .mrow[data-tab="bank"] .ico { background:linear-gradient(135deg,#5ab0ff,#2f6fe0); }
+    .mbadge { display:inline-block; margin-left:8px; min-width:20px; padding:1px 7px; border-radius:999px; background:#f6465d; color:#fff; font-size:12px; font-weight:800; text-align:center; vertical-align:middle; }
+    .mrow .txt { flex:1; min-width:0; }
+    .mrow .ttl { display:block; font-weight:800; font-size:16px; }
+    .mrow .dsc { display:block; font-size:12px; color:#9aa6b2; line-height:1.3; margin-top:3px; }
+    .mrow .arr { color:#9aa6b2; font-size:22px; flex-shrink:0; }
+
+    /* шапка открытой страницы со стрелкой «назад» */
+    #pageBar { display:none; position:sticky; top:0; z-index:10; margin:-16px -16px 12px; padding:12px 14px;
+               background:#0f1724; border-bottom:1px solid rgba(255,255,255,0.06); align-items:center; gap:10px; text-align:left; }
+    #pageBar.show { display:flex; }
+    #backBtn { background:transparent; color:#fff; margin:0; padding:6px 8px; border-radius:10px; display:flex; align-items:center; }
+    #backBtn:active { background:rgba(255,255,255,0.08); }
+    #pageTitle { font-weight:800; font-size:18px; }
+    @keyframes pageIn { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+    .page { display:none; }
+    .page.active { display:block; animation:pageIn .22s ease; }
+
+    .box { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px; margin:10px 0; }
+    .stats { display:flex; gap:8px; margin:10px 0; }
+    .stat { flex:1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:10px 6px; }
+    .stat b { display:block; font-size:16px; color:#ffd166; }
+    .stat span { font-size:11px; color:#9aa6b2; }
+    .search { width:calc(100% - 12px); box-sizing:border-box; background:rgba(0,0,0,.3); color:#fff; border:1px solid rgba(255,255,255,.1); }
+    .plist { max-height:320px; overflow-y:auto; text-align:left; }
+    .pl { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer; border:1px solid transparent; }
+    .pl:hover { background:rgba(255,255,255,0.05); }
+    .pl.sel { border-color:#ffd166; background:rgba(255,209,102,0.08); }
+    .pl .rk { width:28px; color:#9aa6b2; font-weight:700; text-align:center; flex-shrink:0; }
+    .pl .nm { flex:1; min-width:0; }
+    .pl .nm b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pl .nm span { color:#9aa6b2; font-size:12px; }
+    .pl .bl { text-align:right; font-size:13px; color:#ffd166; font-weight:700; flex-shrink:0; }
+    .pl .bl i { display:block; font-style:normal; color:#6fd3ff; font-weight:600; }
+
+    /* казна */
+    .bal { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .bal .lbl { font-size:13px; color:#9aa6b2; }
+    .bal .big { font-size:30px; font-weight:900; color:#ffd166; line-height:1.2; }
+    .bal .big.dia { color:#6fd3ff; }
+    .bal .sub { font-size:12px; color:#9aa6b2; }
+    .chips { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:6px 0 4px; }
+    .chip { margin:0; padding:7px 12px; border-radius:999px; background:rgba(255,255,255,0.06); color:#d9dee5; font-weight:700; font-size:13px; }
+    .chip.on { background:#ffd166; color:#071226; }
+    .hlist { text-align:left; max-height:none; }
+    .hi { display:flex; align-items:center; gap:10px; padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.05); }
+    .hi:last-child { border-bottom:none; }
+    .hi .ic { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; background:rgba(255,255,255,0.06); flex-shrink:0; }
+    .hi .tx { flex:1; min-width:0; }
+    .hi .tx b { display:block; font-size:14px; word-break:break-word; }
+    .hi .tx span { display:block; font-size:12px; color:#9aa6b2; word-break:break-word; }
+    .hi .am { text-align:right; font-weight:800; font-size:14px; flex-shrink:0; }
+    .hi .am.in { color:#0ecb81; }
+    .hi .am.out { color:#f6465d; }
+    /* тикеты */
+    .tkrow { display:block; text-align:left; padding:12px; margin:8px 0; border-radius:12px; cursor:pointer; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); }
+    .tkrow:active { background:rgba(255,255,255,0.07); }
+    .tkrow.unread { border-color:rgba(246,70,93,0.55); background:rgba(246,70,93,0.06); }
+    .tkrow .t1 { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+    .tkrow .t1 b { font-size:15px; word-break:break-word; }
+    .tkrow .t2 { font-size:12px; color:#9aa6b2; margin-top:3px; word-break:break-word; }
+    .tkrow .t3 { font-size:13px; color:#d9dee5; margin-top:6px; word-break:break-word; opacity:.85; }
+    .bchip { margin:0; padding:7px 12px; border-radius:999px; background:rgba(255,255,255,0.06); color:#d9dee5; font-weight:700; font-size:13px; }
+    .bchip.on { background:#f6465d; color:#fff; }
+    .ava { border-radius:50%; background:linear-gradient(135deg,#ff7e5f,#feb47b); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+    .ava img { width:100%; height:100%; object-fit:cover; display:block; }
+    .adm { color:#f6465d !important; }
+    .bantag { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:6px; background:rgba(246,70,93,0.18); color:#f6465d; border:1px solid rgba(246,70,93,0.4); font-size:10px; font-weight:800; text-transform:uppercase; vertical-align:middle; }
+    .st { flex-shrink:0; font-size:10px; font-weight:800; padding:4px 8px; border-radius:6px; text-transform:uppercase; letter-spacing:.4px; }
+    .st.open { background:rgba(255,166,0,0.15); color:#ffa600; border:1px solid rgba(255,166,0,0.3); }
+    .st.answered { background:rgba(14,203,129,0.15); color:#0ecb81; border:1px solid rgba(14,203,129,0.3); }
+    .st.closed { background:rgba(154,166,178,0.15); color:#9aa6b2; border:1px solid rgba(154,166,178,0.3); }
+    .newdot { display:inline-block; margin-left:6px; padding:2px 7px; border-radius:999px; background:#f6465d; color:#fff; font-size:10px; font-weight:800; vertical-align:middle; }
+    .thread { display:flex; flex-direction:column; gap:8px; margin:12px 0; text-align:left; }
+    .msg { max-width:90%; padding:9px 12px; border-radius:12px; font-size:14px; line-height:1.45; white-space:pre-wrap; word-break:break-word; }
+    .msg.user { align-self:flex-start; background:rgba(77,166,255,0.16); border:1px solid rgba(77,166,255,0.25); }
+    .msg.admin { align-self:flex-end; background:rgba(14,203,129,0.13); border:1px solid rgba(14,203,129,0.28); }
+    .msg .who { display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; opacity:.7; margin-bottom:3px; }
+    .msg .when { display:block; font-size:10px; opacity:.5; margin-top:4px; text-align:right; }
+    .files { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-start; margin:8px 0; }
+    .fchip { margin:0; padding:7px 11px; border-radius:8px; background:rgba(255,255,255,0.07); color:#fff; font-weight:600; font-size:13px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #tkReply { width:100%; box-sizing:border-box; min-height:90px; resize:vertical; background:rgba(0,0,0,.3); color:#fff; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:10px; font:inherit; font-size:14px; outline:none; margin:6px 0; }
+    .modebtn { display:block; width:100%; margin:8px 0; padding:12px 14px; text-align:left; background:rgba(255,255,255,0.05); color:#fff; font-weight:normal; border:1px solid rgba(255,255,255,0.1); border-radius:12px; }
+    .modebtn b { display:block; font-size:15px; }
+    .modebtn span { display:block; font-size:12px; color:#9aa6b2; margin-top:3px; line-height:1.4; }
+    .modebtn.on { border-color:#4da6ff; background:rgba(77,166,255,0.14); }
+    .modebtn.on b::after { content:' · выбрано'; color:#4da6ff; font-size:12px; font-weight:700; }
+    .bktag { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:6px; background:rgba(77,166,255,0.16); color:#6fb6ff; border:1px solid rgba(77,166,255,0.4); font-size:10px; font-weight:800; text-transform:uppercase; vertical-align:middle; }
+    .info { text-align:left; font-size:14px; line-height:1.7; }
+    .info b { color:#ffd166; }
+
+    .pick { display:flex; align-items:center; gap:10px; text-align:left; }
+    .pick .who { flex:1; min-width:0; }
+    .pick .who b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pick .who span { font-size:12px; color:#9aa6b2; }
+    #pickerList { display:none; }
+
+    /* Стиль только для тумблера автофарма */
+    .switch { position: relative; display: inline-block; width: 50px; height: 26px; vertical-align: middle; margin: 0 10px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2a3547; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #ffd166; }
+    input:checked + .slider:before { transform: translateX(24px); }
+</style>
+</head>
+<body>
+  <div id="pageBar">
+    <button id="backBtn" onclick="goBack()" aria-label="назад">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div id="pageTitle"></div>
+  </div>
+
+  <div id="head">
+    <h2>админ панель</h2>
+    <div id="mode">загрузка…</div>
+  </div>
+  <div id="denied" style="display:none; color:#ff6b6b; margin-top:20px;"></div>
+
+  <div id="panel">
+
+    <div id="menu">
+      <button class="mrow" data-tab="home" onclick="showTab('home')">
+        <div class="ico">🏠</div>
+        <div class="txt"><span class="ttl">Главная</span><span class="dsc">все игроки, их баланс монет и алмазов</span></div>
+        <div class="arr">›</div>
+      </button>
+      <button class="mrow" data-tab="boost" onclick="showTab('boost')">
+        <div class="ico">💰</div>
+        <div class="txt"><span class="ttl">Накрутка</span><span class="dsc">монеты, алмазы и бусты себе и игрокам</span></div>
+        <div class="arr">›</div>
+      </button>
+      <button class="mrow" data-tab="treasury" onclick="showTab('treasury')">
+        <div class="ico">🏦</div>
+        <div class="txt"><span class="ttl">Казна</span><span class="dsc">монеты и алмазы, которые потратили игроки, и вывод в игру</span></div>
+        <div class="arr">›</div>
+      </button>
+      <button class="mrow" data-tab="tickets" onclick="showTab('tickets')">
+        <div class="ico">🎫</div>
+        <div class="txt"><span class="ttl">Тикеты<span class="mbadge" id="tkMenuBadge" style="display:none"></span></span><span class="dsc">обращения игроков в поддержку и ответы им</span></div>
+        <div class="arr">›</div>
+      </button>
+      <button class="mrow" data-tab="bank" onclick="showTab('bank')">
+        <div class="ico">💳</div>
+        <div class="txt"><span class="ttl">Банк</span><span class="dsc">кому открыт банк и в каком виде: кнопка в игре или вместо игры</span></div>
+        <div class="arr">›</div>
+      </button>
+    </div>
+
+    <!-- ============ ГЛАВНАЯ: только просмотр ============ -->
+    <div id="page-home" class="page">
+      <div class="stats">
+        <div class="stat"><b id="stPlayers">0</b><span>игроков</span></div>
+        <div class="stat"><b id="stCoins">0</b><span>монет всего</span></div>
+        <div class="stat"><b id="stDiamonds">0</b><span>алмазов всего</span></div>
+      </div>
+
+      <div class="box">
+        <input type="text" class="search" id="searchHome" placeholder="поиск по имени, @username, нику или id" oninput="renderList('home')">
+        <div><button class="ghost" onclick="loadPlayers()">🔄 обновить список</button></div>
+        <div id="listHome" class="plist"></div>
+      </div>
+
+      <div id="homeCard" class="box" style="display:none">
+        <div id="homeAva" style="display:flex;justify-content:center;margin-bottom:8px"></div>
+        <h3 id="homeTitle">—</h3>
+        <div id="homeInfo" class="info"></div>
+      </div>
+    </div>
+
+    <!-- ============ КАЗНА: траты игроков ============ -->
+    <div id="page-treasury" class="page">
+      <div class="box bal">
+        <div class="lbl">🪙 монеты в казне</div>
+        <div class="big" id="trCoins">—</div>
+        <div class="sub" id="trCoinsSub"></div>
+        <input type="number" id="wdCoins" placeholder="сколько вывести" min="1">
+        <div>
+          <button onclick="withdraw('coins', val('wdCoins'))">вывести в игру</button>
+          <button class="ghost" onclick="withdraw('coins', 'all')">вывести всё</button>
+        </div>
+      </div>
+
+      <div class="box bal">
+        <div class="lbl">💎 алмазы в казне</div>
+        <div class="big dia" id="trDia">—</div>
+        <div class="sub" id="trDiaSub"></div>
+        <input type="number" id="wdDia" placeholder="сколько вывести" min="1">
+        <div>
+          <button onclick="withdraw('diamonds', val('wdDia'))">вывести в игру</button>
+          <button class="ghost" onclick="withdraw('diamonds', 'all')">вывести всё</button>
+        </div>
+      </div>
+      <div class="small" id="trNote">выводятся целые числа. деньги зачисляются на твой игровой баланс.</div>
+
+      <div class="box">
+        <h3 style="margin-top:0">история операций</h3>
+        <div class="chips">
+          <button class="chip on" data-f="all" onclick="setFilter('all')">все</button>
+          <button class="chip" data-f="coins" onclick="setFilter('coins')">🪙 монеты</button>
+          <button class="chip" data-f="diamonds" onclick="setFilter('diamonds')">💎 алмазы</button>
+          <button class="chip" data-f="withdraw" onclick="setFilter('withdraw')">📤 выводы</button>
+        </div>
+        <input type="text" class="search" id="searchTr" placeholder="поиск по игроку или покупке" oninput="renderHistory()">
+        <div><button class="ghost" onclick="loadTreasury()">🔄 обновить</button></div>
+        <div id="trList" class="hlist"></div>
+        <div class="small" id="trMore"></div>
+      </div>
+    </div>
+
+    <!-- ============ ТИКЕТЫ: обращения в поддержку ============ -->
+    <div id="page-tickets" class="page">
+
+      <div id="tkListView">
+        <div class="chips" id="tkChips">
+          <button class="chip on" data-f="all" onclick="setTkFilter('all')">все</button>
+          <button class="chip" data-f="open" onclick="setTkFilter('open')">ждут ответа</button>
+          <button class="chip" data-f="answered" onclick="setTkFilter('answered')">отвечено</button>
+          <button class="chip" data-f="closed" onclick="setTkFilter('closed')">закрыто</button>
+        </div>
+        <input type="text" class="search" id="searchTk" placeholder="поиск по игроку, теме или тексту" oninput="renderTickets()">
+        <div><button class="ghost" onclick="loadTickets()">🔄 обновить</button></div>
+        <div id="tkList"></div>
+      </div>
+
+      <div id="tkDetailView" style="display:none">
+        <div class="box" style="text-align:left">
+          <div style="display:flex; gap:8px; align-items:flex-start; justify-content:space-between">
+            <h3 id="tkSubject" style="margin:0; word-break:break-word">—</h3>
+            <span class="st open" id="tkStatus">—</span>
+          </div>
+          <div class="small" id="tkWho" style="margin-top:6px"></div>
+          <div class="small" id="tkMeta"></div>
+        </div>
+        <div id="tkFiles" class="files"></div>
+        <div id="tkThread" class="thread"></div>
+
+        <div id="tkReplyBox" class="box">
+          <textarea id="tkReply" maxlength="3000" placeholder="твой ответ игроку…"></textarea>
+          <div>
+            <button id="tkSend" onclick="sendReply(false)">отправить ответ</button>
+            <button id="tkSendClose" class="ghost" onclick="sendReply(true)">ответить и закрыть</button>
+          </div>
+          <div class="small">игрок увидит ответ в игре, а ещё получит сообщение от бота в Telegram.</div>
+        </div>
+        <div>
+          <button class="ghost" id="tkToggle" onclick="toggleTkStatus()">закрыть обращение</button>
+          <button class="danger" onclick="deleteTicket()">удалить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ БАНК: кому открыт банк ============ -->
+    <div id="page-bank" class="page">
+      <div class="stats">
+        <div class="stat"><b id="bkStAll">0</b><span>выдан доступ</span></div>
+        <div class="stat"><b id="bkStBtn">0</b><span>кнопка в игре</span></div>
+        <div class="stat"><b id="bkStFull">0</b><span>вместо игры</span></div>
+      </div>
+
+      <div class="box">
+        <div class="small" style="text-align:left;margin-bottom:6px">выбери игрока и открой ему банк одним из двух способов.</div>
+        <div class="chips" id="bankChips">
+          <button class="chip on" data-f="all" onclick="setBankFilter('all')">все игроки</button>
+          <button class="chip" data-f="access" onclick="setBankFilter('access')">с доступом</button>
+        </div>
+        <input type="text" class="search" id="searchBank" placeholder="поиск по имени, @username, нику или id" oninput="renderBankList()">
+        <div><button class="ghost" onclick="loadPlayers()">🔄 обновить список</button></div>
+        <div id="listBank" class="plist"></div>
+      </div>
+
+      <div id="bankCard" class="box" style="display:none">
+        <div id="bankAva" style="display:flex;justify-content:center;margin-bottom:8px"></div>
+        <h3 id="bankTitle" style="margin:4px 0">—</h3>
+        <div class="small" id="bankSub"></div>
+        <div id="bankModes" style="margin-top:10px">
+          <button class="modebtn" data-m="off" onclick="setBankMode('off')">
+            <b>нет доступа</b>
+            <span>банка у игрока нет, он не может ни запрашивать деньги, ни получать запросы. переводы ему всё равно можно отправлять</span>
+          </button>
+          <button class="modebtn" data-m="button" onclick="setBankMode('button')">
+            <b>кнопка «Банк» в игре</b>
+            <span>обычная игра не меняется, но в главном меню под поддержкой и новостями появляется кнопка «Банк».</span>
+          </button>
+          <button class="modebtn" data-m="full" onclick="setBankMode('full')">
+            <b>банк вместо игры</b>
+            <span>при запуске игры вместо обычной игры сразу открывается банк.</span>
+          </button>
+        </div>
+        <div class="small" id="bankNote" style="margin-top:8px"></div>
+      </div>
+
+      <div class="box" style="text-align:left">
+        <b>журнал банка</b>
+        <div class="small" style="margin:6px 0">все переводы и запросы денег игроков. хранятся последние 1000 операций</div>
+        <div class="chips" id="blChips">
+          <button class="chip on" data-f="all" onclick="setBlFilter('all')">все</button>
+          <button class="chip" data-f="transfer" onclick="setBlFilter('transfer')">переводы</button>
+          <button class="chip" data-f="request" onclick="setBlFilter('request')">запросы</button>
+          <button class="chip" data-f="declined" onclick="setBlFilter('declined')">отклонено</button>
+        </div>
+        <input type="text" class="search" id="searchBl" placeholder="поиск по имени, id или комментарию" oninput="renderBankLog()">
+        <div><button class="ghost" onclick="loadBankLog()">🔄 обновить журнал</button></div>
+        <div id="blList"></div>
+      </div>
+    </div>
+
+    <!-- ============ НАКРУТКА: все правки ============ -->
+    <div id="page-boost" class="page">
+
+      <div class="box">
+        <div class="pick">
+          <div id="pickAva"></div>
+          <div class="who">
+            <b id="pickName">игрок не выбран</b>
+            <span id="pickSub">выбери, кому накручивать</span>
+          </div>
+          <button class="ghost" onclick="togglePicker()">сменить игрока</button>
+        </div>
+        <div id="pickerList">
+          <input type="text" class="search" id="searchBoost" placeholder="поиск по имени, @username, нику или id" oninput="renderList('boost')">
+          <div id="listBoost" class="plist"></div>
+        </div>
+      </div>
+
+      <div id="editor" style="display:none">
+
+        <div class="row">
+          <h3>монеты</h3>
+          <input type="number" id="coins" placeholder="число монет"><br>
+          <button onclick="op('setCoins', val('coins'))">установить баланс</button>
+          <button onclick="op('addCoins', val('coins'))">добавить к балансу</button>
+        </div>
+
+        <div class="row">
+          <h3>сжечь монеты (сжигаловка)</h3>
+          <input type="number" id="burnAmount" placeholder="сколько сжечь (целое число)"><br>
+          <button onclick="burn()">сжечь</button>
+        </div>
+
+        <div class="row">
+          <h3>алмазы</h3>
+          <input type="number" id="diamonds" placeholder="число алмазов"><br>
+          <button onclick="op('setDiamonds', val('diamonds'))">установить баланс</button>
+          <button onclick="op('addDiamonds', val('diamonds'))">добавить к балансу</button>
+        </div>
+
+        <div class="row">
+          <h3>бонус за клик</h3>
+          <input type="number" id="clickBonus" placeholder="бонус за клик"><br>
+          <button onclick="op('setClickBonus', val('clickBonus'))">установить</button>
+          <button onclick="op('addClickBonus', val('clickBonus'))">добавить</button>
+        </div>
+
+        <div class="row">
+          <h3>бусты</h3>
+          <button onclick="op('maxBoost')">открыть все бусты</button>
+        </div>
+
+        <div class="row">
+          <h3>никнейм игрока в игре</h3>
+          <input type="text" id="newNick" placeholder="новый ник"><br>
+          <button onclick="setNick()">изменить ник</button>
+          <button onclick="op('resetNickname')">вернуть стандартный</button>
+          <span class="muted">в таблице лидеров всегда имя из Telegram</span>
+        </div>
+
+        <div class="row">
+          <h3>автофарм (клики по зажатию)</h3>
+          <span class="muted">при зажатии/ведении по картинке монеты будут автоматически фармиться</span>
+          <div style="margin: 10px 0;">
+            <span class="small">выкл</span>
+            <label class="switch">
+              <input type="checkbox" id="holdToTapToggle" onchange="op('holdToTap', this.checked, true)">
+              <span class="slider"></span>
+            </label>
+            <span class="small" style="color: #ffd166;">вкл</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <h3>сброс</h3>
+          <div class="small">сбросит весь прогресс выбранного игрока (монеты, алмазы, апгрейды, энергия и т.д.) к стандартным значениям.</div>
+          <button class="danger" onclick="resetPlayer()">сбросить прогресс</button>
+          <div class="small" style="margin-top:12px">«как нового игрока» дополнительно обнуляет друзей и бонус рефералки и снова разрешает получить награду по реферальной ссылке</div>
+          <button class="danger" onclick="resetAsNew()">сбросить как нового игрока</button>
+        </div>
+
+        <div class="row" id="banRow">
+          <h3>бан</h3>
+          <div class="small" id="banState">игрок не забанен</div>
+          <button class="danger" id="banOpenBtn" onclick="toggleBanForm()">забанить игрока</button>
+          <button id="unbanBtn" onclick="unbanPlayer()" style="display:none">разбанить</button>
+          <div id="banForm" style="display:none">
+            <div class="small" style="margin-top:10px">на какой срок</div>
+            <div class="chips" id="banDur">
+              <button class="bchip on" data-d="forever" onclick="pickBan('d','forever')">навсегда</button>
+              <button class="bchip" data-d="30" onclick="pickBan('d','30')">месяц</button>
+              <button class="bchip" data-d="7" onclick="pickBan('d','7')">неделя</button>
+              <button class="bchip" data-d="custom" onclick="pickBan('d','custom')">своё число дней</button>
+            </div>
+            <input type="number" id="banDays" min="1" max="3650" placeholder="сколько дней" style="display:none"><br>
+            <div class="small" style="margin-top:6px">причина</div>
+            <div class="chips" id="banReasons">
+              <button class="bchip on" data-r="Читерство" onclick="pickBan('r','Читерство')">Читерство</button>
+              <button class="bchip" data-r="Автокликер" onclick="pickBan('r','Автокликер')">Автокликер</button>
+              <button class="bchip" data-r="Багоюз" onclick="pickBan('r','Багоюз')">Багоюз</button>
+              <button class="bchip" data-r="custom" onclick="pickBan('r','custom')">другая причина</button>
+            </div>
+            <input type="text" id="banReasonText" maxlength="120" placeholder="напиши причину" style="display:none"><br>
+            <button class="danger" onclick="banPlayer()">подтвердить бан</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const initData = tg && tg.initData;
+    const API = '/.netlify/functions/game';
+    const MY_ID = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : null;
+
+    let players = [];
+    let selectedId = null;
+    const details = {}; // полное состояние игроков (admin_get)
+
+    if (initData) { try { tg.ready(); tg.expand(); tg.BackButton.onClick(() => goBack()); } catch (e) {} }
+
+    async function api(payload) {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(Object.assign({ initData }, payload))
+      });
+      let data = null;
+      try { data = await res.json(); } catch (e) {}
+      return { status: res.status, ok: res.ok, data };
+    }
+
+    function deny(text) {
+      document.getElementById('mode').textContent = '';
+      const d = document.getElementById('denied');
+      d.textContent = text;
+      d.style.display = 'block';
+    }
+
+    const pname = p => p.name || p.username || p.nickname || ('id ' + p.id);
+    const fmt = n => { try { return Number(n).toLocaleString('ru-RU'); } catch (e) { return String(n); } };
+    const val = id => document.getElementById(id).value;
+    const sel = () => players.find(p => String(p.id) === String(selectedId));
+
+    function ago(ts) {
+      if (!ts) return 'неизвестно';
+      const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+      if (s < 60) return 'только что';
+      if (s < 3600) return Math.floor(s / 60) + ' мин назад';
+      if (s < 86400) return Math.floor(s / 3600) + ' ч назад';
+      return Math.floor(s / 86400) + ' дн назад';
+    }
+
+    // ---------- навигация: меню -> страница со стрелкой «назад» ----------
+    const TITLES = { home: '🏠 Главная', boost: '💰 Накрутка', treasury: '🏦 Казна', tickets: '🎫 Тикеты', bank: '💳 Банк' };
+    let curPage = 'menu';
+    function showTab(name) {
+      const inMenu = name === 'menu';
+      curPage = name;
+      document.getElementById('menu').style.display = inMenu ? 'flex' : 'none';
+      document.getElementById('head').style.display = inMenu ? 'block' : 'none';
+      document.getElementById('pageBar').classList.toggle('show', !inMenu);
+      document.getElementById('pageTitle').textContent = TITLES[name] || '';
+      document.getElementById('page-home').classList.toggle('active', name === 'home');
+      document.getElementById('page-boost').classList.toggle('active', name === 'boost');
+      document.getElementById('page-treasury').classList.toggle('active', name === 'treasury');
+      document.getElementById('page-tickets').classList.toggle('active', name === 'tickets');
+      document.getElementById('page-bank').classList.toggle('active', name === 'bank');
+      try {
+        if (tg && tg.BackButton) { if (inMenu) tg.BackButton.hide(); else tg.BackButton.show(); }
+      } catch (e) {}
+      if (name === 'home' && players.length) loadPlayers(); // при открытии «Главной» обновляем данные
+      if (name === 'treasury') loadTreasury();               // и «Казны» тоже
+      if (name === 'tickets') { showTkList(); loadTickets(); } // а «Тикеты» всегда открываются со списка
+      if (name === 'bank') { renderBank(); loadPlayers(); loadBankLog(); }     // «Банк»: свежий список игроков
+      window.scrollTo(0, 0);
+    }
+    function goBoost() { showTab('boost'); }
+    function goBack() {
+      if (curPage === 'tickets' && tkCur) { showTkList(); loadTickets(); return; }
+      showTab('menu');
+    }
+
+    function togglePicker() {
+      const el = document.getElementById('pickerList');
+      el.style.display = el.style.display === 'block' ? 'none' : 'block';
+      if (el.style.display === 'block') renderList('boost');
+    }
+
+    function selectPlayer(id) {
+      selectedId = String(id);
+      renderAll();
+      fetchDetails(selectedId);
+    }
+
+    // ---------- список игроков ----------
+    async function loadPlayers() {
+      const r = await api({ action: 'admin_list' });
+      if (!r.ok) { alert('не удалось загрузить игроков (' + r.status + ')'); return; }
+      players = r.data.players || [];
+      if (!selectedId && MY_ID && players.some(p => String(p.id) === MY_ID)) selectedId = MY_ID;
+      renderAll();
+      if (selectedId) fetchDetails(String(selectedId));
+    }
+
+    function renderAll() {
+      renderStats();
+      renderList('home');
+      if (document.getElementById('pickerList').style.display === 'block') renderList('boost');
+      renderCards();
+      renderBank();
+    }
+
+    function renderStats() {
+      document.getElementById('stPlayers').textContent = fmt(players.length);
+      document.getElementById('stCoins').textContent = fmt(players.reduce((a, p) => a + (p.total || 0), 0));
+      document.getElementById('stDiamonds').textContent = fmt(players.reduce((a, p) => a + (p.diamonds || 0), 0));
+    }
+
+    // аватарка из Telegram; пока грузится (или если её нет) — первая буква имени
+    function mkAva(p, size) {
+      const d = document.createElement('div');
+      d.className = 'ava';
+      d.style.cssText = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px`;
+      d.textContent = (Array.from(pname(p))[0] || '?').toUpperCase();
+      if (p.photo) {
+        const img = document.createElement('img');
+        img.referrerPolicy = 'no-referrer'; img.alt = '';
+        img.onload = () => { d.textContent = ''; d.appendChild(img); };
+        img.src = p.photo;
+      }
+      return d;
+    }
+    function setAva(id, p, size) {
+      const box = document.getElementById(id);
+      box.innerHTML = '';
+      box.appendChild(mkAva(p, size));
+    }
+
+    function renderList(which) {
+      const isHome = which === 'home';
+      const q = document.getElementById(isHome ? 'searchHome' : 'searchBoost').value.trim().toLowerCase().replace(/^@/, '');
+      const box = document.getElementById(isHome ? 'listHome' : 'listBoost');
+      box.innerHTML = '';
+      const list = players.filter(p => !q ||
+        [pname(p), p.username, p.nickname, String(p.id)].some(x => x && String(x).toLowerCase().includes(q)));
+      if (!list.length) { box.innerHTML = '<div class="small" style="padding:12px;text-align:center">никого не найдено</div>'; return; }
+      list.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'pl' + (String(p.id) === String(selectedId) ? ' sel' : '');
+        row.onclick = () => {
+          selectPlayer(p.id);
+          if (!isHome) document.getElementById('pickerList').style.display = 'none';
+          if (isHome) { const c = document.getElementById('homeCard'); setTimeout(() => c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50); }
+        };
+
+        const rk = document.createElement('div'); rk.className = 'rk'; rk.textContent = String(i + 1);
+        const nm = document.createElement('div'); nm.className = 'nm';
+        const b = document.createElement('b'); b.textContent = pname(p) + (String(p.id) === MY_ID ? ' (вы)' : '');
+        if (p.isAdmin) b.classList.add('adm');
+        if (p.ban) { const t = document.createElement('span'); t.className = 'bantag'; t.textContent = 'бан'; b.appendChild(t); }
+        const sp = document.createElement('span');
+        sp.textContent = (p.username ? '@' + p.username : 'без username') + ' · ' + p.id;
+        nm.appendChild(b); nm.appendChild(sp);
+        const bl = document.createElement('div'); bl.className = 'bl';
+        bl.textContent = fmt(p.total) + ' мон.';
+        const di = document.createElement('i'); di.textContent = fmt(p.diamonds) + ' алм.';
+        bl.appendChild(di);
+
+        row.appendChild(rk); row.appendChild(mkAva(p, 40)); row.appendChild(nm); row.appendChild(bl);
+        box.appendChild(row);
+      });
+    }
+
+    async function fetchDetails(id) {
+      const r = await api({ action: 'admin_get', targetId: id });
+      if (r.ok) {
+        details[id] = r.data.state;
+        const i = players.findIndex(x => String(x.id) === id);
+        if (i >= 0) players[i] = r.data.summary;
+        if (String(selectedId) === id) renderAll();
+      }
+    }
+
+    // карточка выбранного игрока: на «Главной» и в «Накрутке»
+    function fillInfo(box, p) {
+      box.innerHTML = '';
+      const add = (label, value) => {
+        const d = document.createElement('div');
+        const b = document.createElement('b'); b.textContent = label + ': ';
+        d.appendChild(b); d.appendChild(document.createTextNode(value));
+        box.appendChild(d);
+      };
+      const st = details[String(p.id)] || null;
+      add('Telegram id', String(p.id));
+      if (p.ban) add('🚫 бан', p.ban.reason + ' · ' + (p.ban.until ? 'до ' + banWhen(p.ban.until) : 'навсегда'));
+      add('username', p.username ? '@' + p.username : '—');
+      add('ник в игре', p.nickname || '—');
+      add('ранг', p.isAdmin ? 'админ' : 'игрок');
+      add('доступ к банку', (!p.bank || p.bank === 'off') ? 'нет' : 'есть — ' + ({ button: 'кнопка «Банк» в игре', full: 'интерфейс игры заменён на банк', admin: 'админский (через ссылку в боте)' }[p.bank] || p.bank));
+      add('монеты', fmt(p.total));
+      add('алмазы', fmt(p.diamonds));
+      if (st) {
+        add('бонус за клик', fmt(Number(st.bonus) || 0));
+        add('уровень пассива', String((st.passive && st.passive.level) || 0));
+        add('энергия', fmt(Number(st.energyCurrent) || 0));
+        add('скин', (st.skins && st.skins.equipped) || 'стандартный');
+      } else {
+        add('остальное', 'загрузка…');
+      }
+      add('последнее сохранение', ago(p.updatedAt));
+    }
+
+    function renderCards() {
+      const p = sel();
+      const homeCard = document.getElementById('homeCard');
+      const ed = document.getElementById('editor');
+      if (!p) {
+        homeCard.style.display = 'none';
+        ed.style.display = 'none';
+        document.getElementById('pickName').textContent = 'игрок не выбран';
+        document.getElementById('pickSub').textContent = 'выбери, кому накручивать';
+        return;
+      }
+      const title = pname(p) + (String(p.id) === MY_ID ? ' (вы)' : '');
+
+      homeCard.style.display = 'block';
+      document.getElementById('homeTitle').textContent = title;
+      setAva('homeAva', p, 72);
+      document.getElementById('homeTitle').classList.toggle('adm', !!p.isAdmin);
+      fillInfo(document.getElementById('homeInfo'), p);
+
+      document.getElementById('pickName').textContent = title;
+      setAva('pickAva', p, 40);
+      document.getElementById('pickName').classList.toggle('adm', !!p.isAdmin);
+      document.getElementById('pickSub').textContent = (p.username ? '@' + p.username : 'без username') + ' · ' + p.id;
+      ed.style.display = 'block';
+      renderBan();
+      const st = details[String(p.id)];
+      if (st) document.getElementById('holdToTapToggle').checked = !!st.holdToTap;
+    }
+
+    // ---------- действия над выбранным игроком ----------
+    async function op(name, value, silent) {
+      const p = sel();
+      if (!p) return alert('выбери игрока');
+      if (value !== undefined && typeof value === 'string' && name !== 'setNickname') {
+        if (value.trim() === '' || isNaN(Number(value))) return alert('введи корректное число');
+      }
+      const r = await api({ action: 'admin_update', targetId: String(p.id), act: name, value });
+      if (!r.ok) {
+        const e = r.data && r.data.error;
+        return alert(e === 'bad_value' ? 'некорректное значение' : 'ошибка: ' + (e || r.status));
+      }
+      const i = players.findIndex(x => String(x.id) === String(p.id));
+      if (i >= 0) players[i] = r.data.summary;
+      details[String(p.id)] = r.data.state;
+      renderAll();
+      if (!silent) alert('сохранено! игрок увидит изменения при следующем открытии игры (или в течение минуты)');
+    }
+
+    function burn() {
+      const p = sel();
+      if (!p) return alert('выбери игрока');
+      const amount = Math.floor(Number(val('burnAmount')));
+      if (!amount || amount <= 0) return alert('введите число больше нуля');
+      if (p.total <= 0) return alert('баланс уже равен 0');
+      if (!confirm(`сжечь ${fmt(amount)} монет у «${pname(p)}»? Это необратимо.`)) return;
+      op('burnCoins', amount);
+    }
+
+    function setNick() {
+      const v = val('newNick');
+      if (!v.trim()) return alert('введите ник');
+      op('setNickname', v);
+    }
+
+    function resetPlayer() {
+      const p = sel();
+      if (!p) return alert('выбери игрока');
+      if (!confirm(`точно сбросить прогресс игрока «${pname(p)}»? Это удалит монеты, алмазы, апгрейды и вернёт игру к начальным значениям.`)) return;
+      op('resetState');
+    }
+
+    // ---------- бан ----------
+    let banDur = 'forever', banReason = 'Читерство';
+    function toggleBanForm() {
+      const f = document.getElementById('banForm');
+      f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+    function pickBan(kind, v) {
+      if (kind === 'd') banDur = v; else banReason = v;
+      const box = document.getElementById(kind === 'd' ? 'banDur' : 'banReasons');
+      box.querySelectorAll('.bchip').forEach(c => c.classList.toggle('on', c.dataset[kind] === v));
+      document.getElementById('banDays').style.display = banDur === 'custom' ? 'inline-block' : 'none';
+      document.getElementById('banReasonText').style.display = banReason === 'custom' ? 'inline-block' : 'none';
+    }
+    function banWhen(ts) { return new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    function renderBan() {
+      const p = sel();
+      if (!p) return;
+      const b = p.ban;
+      document.getElementById('banState').textContent = b
+        ? '🚫 игрок забанен · причина: ' + b.reason + ' · срок: ' + (b.until ? 'до ' + banWhen(b.until) : 'навсегда')
+        : 'игрок не забанен';
+      document.getElementById('unbanBtn').style.display = b ? 'inline-block' : 'none';
+      document.getElementById('banOpenBtn').textContent = b ? 'изменить бан' : 'забанить игрока';
+      if (!b) document.getElementById('banForm').style.display = 'none';
+    }
+    async function banPlayer() {
+      const p = sel();
+      if (!p) return alert('выбери игрока');
+      let days = banDur;
+      if (banDur === 'custom') {
+        days = Math.floor(Number(document.getElementById('banDays').value));
+        if (!(days >= 1) || days > 3650) return alert('введи число дней от 1 до 3650');
+      } else if (banDur !== 'forever') days = Number(banDur);
+      const reason = banReason === 'custom' ? document.getElementById('banReasonText').value.trim() : banReason;
+      if (!reason) return alert('напиши причину бана');
+      const term = days === 'forever' ? 'навсегда' : 'на ' + days + ' дн.';
+      if (!confirm(`забанить «${pname(p)}» ${term}? Причина: ${reason}`)) return;
+      const r = await api({ action: 'admin_update', targetId: String(p.id), act: 'ban', value: { days, reason } });
+      if (!r.ok) return alert(r.data && r.data.error === 'cant_ban_admin' ? 'админа банить нельзя' : 'не получилось забанить (' + ((r.data && r.data.error) || r.status) + ')');
+      applyBanResult(p, r);
+      alert('игрок забанен');
+    }
+    async function unbanPlayer() {
+      const p = sel();
+      if (!p) return alert('выбери игрока');
+      if (!confirm(`разбанить «${pname(p)}»?`)) return;
+      const r = await api({ action: 'admin_update', targetId: String(p.id), act: 'unban' });
+      if (!r.ok) return alert('не получилось разбанить');
+      applyBanResult(p, r);
+      alert('игрок разбанен');
+    }
+    function applyBanResult(p, r) {
+      const i = players.findIndex(x => String(x.id) === String(p.id));
+      if (i >= 0) players[i] = r.data.summary;
+      details[String(p.id)] = r.data.state;
+      renderAll();
+    }
+
+    function resetAsNew() {
+      const p = sel();
+      if (!p) return alert('выбери игрока');
+      if (!confirm(`сбросить игрока «${pname(p)}» как совсем нового? весь прогресс и бонусы друзей обнулятся, а по реферальной ссылке он снова сможет получить награду. игроку, который его приглашал, этот друг вычтется из счётчика`)) return;
+      op('resetAsNew');
+    }
+
+    // ---------- казна ----------
+    let treasury = null;
+    let histFilter = 'all';
+
+    function fmtAmt(n) { // целые без хвоста, дробные с двумя знаками
+      const v = Number(n) || 0;
+      return Number.isInteger(v) ? fmt(v) : v.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtTime(ts) {
+      try { return new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+      catch (e) { return ''; }
+    }
+
+    async function loadTreasury() {
+      const r = await api({ action: 'admin_treasury' });
+      if (!r.ok) {
+        document.getElementById('trList').innerHTML = '<div class="small" style="padding:12px;text-align:center">не удалось загрузить казну (' + r.status + ')</div>';
+        return;
+      }
+      treasury = r.data;
+      renderTreasury();
+    }
+
+    function renderTreasury() {
+      const t = treasury;
+      if (!t) return;
+      document.getElementById('trCoins').textContent = fmtAmt(t.balance.coins);
+      document.getElementById('trDia').textContent = fmtAmt(t.balance.diamonds);
+      document.getElementById('trCoinsSub').textContent = 'потрачено игроками: ' + fmtAmt(t.spent.coins) + ' · выведено: ' + fmtAmt(t.withdrawn.coins);
+      document.getElementById('trDiaSub').textContent = 'потрачено игроками: ' + fmtAmt(t.spent.diamonds) + ' · выведено: ' + fmtAmt(t.withdrawn.diamonds) + ' · платящих игроков: ' + fmt(t.payers);
+      renderHistory();
+    }
+
+    function setFilter(f) {
+      histFilter = f;
+      document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.f === f));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const box = document.getElementById('trList');
+      const more = document.getElementById('trMore');
+      box.innerHTML = '';
+      more.textContent = '';
+      if (!treasury) return;
+      const q = document.getElementById('searchTr').value.trim().toLowerCase().replace(/^@/, '');
+      const list = treasury.history.filter(h => {
+        if (histFilter === 'coins' && !(h.kind === 'spend' && h.currency === 'coins')) return false;
+        if (histFilter === 'diamonds' && !(h.kind === 'spend' && h.currency === 'diamonds')) return false;
+        if (histFilter === 'withdraw' && h.kind !== 'withdraw') return false;
+        return !q || [h.name, h.username, h.title, String(h.uid)].some(x => x && String(x).toLowerCase().includes(q));
+      });
+      if (!list.length) { box.innerHTML = '<div class="small" style="padding:12px;text-align:center">пока пусто</div>'; return; }
+      list.forEach(h => {
+        const isW = h.kind === 'withdraw';
+        const row = document.createElement('div'); row.className = 'hi';
+        const ic = document.createElement('div'); ic.className = 'ic'; ic.textContent = isW ? '📤' : (h.currency === 'diamonds' ? '💎' : '🪙');
+        const tx = document.createElement('div'); tx.className = 'tx';
+        const b = document.createElement('b'); b.textContent = h.title;
+        const sp = document.createElement('span');
+        sp.textContent = (isW ? 'вывод: ' : '') + h.name + (h.username ? ' (@' + h.username + ')' : '') + ' · ' + fmtTime(h.ts);
+        tx.appendChild(b); tx.appendChild(sp);
+        const am = document.createElement('div'); am.className = 'am ' + (isW ? 'out' : 'in');
+        am.textContent = (isW ? '−' : '+') + fmtAmt(h.amount) + (h.currency === 'diamonds' ? ' алм.' : ' мон.');
+        row.appendChild(ic); row.appendChild(tx); row.appendChild(am);
+        box.appendChild(row);
+      });
+      if (treasury.history.length >= 300) more.textContent = 'показаны последние 300 операций';
+    }
+
+    async function withdraw(currency, amount) {
+      const name = currency === 'diamonds' ? 'алмазов' : 'монет';
+      if (amount !== 'all') {
+        const n = Math.floor(Number(amount));
+        if (!n || n < 1) return alert('введи, сколько вывести (целое число больше нуля)');
+        amount = n;
+      }
+      const have = treasury ? Math.floor(treasury.balance[currency]) : 0;
+      const will = amount === 'all' ? have : amount;
+      if (will < 1) return alert('в казне пока нечего выводить');
+      if (!confirm(`вывести ${fmt(will)} ${name} на твой игровой баланс?`)) return;
+      const r = await api({ action: 'admin_withdraw', currency, amount });
+      if (!r.ok) {
+        const e = r.data && r.data.error;
+        const msg = {
+          empty: 'в казне пока нечего выводить',
+          bad_value: 'некорректное число',
+          not_enough: 'в казне только ' + fmt(r.data && r.data.available) + ' ' + name,
+          no_player: 'у тебя ещё нет игрового аккаунта: открой игру в этом боте хотя бы раз и повтори',
+          withdraw_failed: 'не получилось, ничего не списано. попробуй ещё раз'
+        }[e] || ('ошибка: ' + (e || r.status));
+        alert(msg);
+        loadTreasury();
+        return;
+      }
+      document.getElementById(currency === 'diamonds' ? 'wdDia' : 'wdCoins').value = '';
+      alert(`готово: ${fmt(r.data.amount)} ${name} зачислено на твой игровой баланс. в игре они появятся при следующем открытии (или в течение минуты)`);
+      await loadTreasury();
+      loadPlayers(); // баланс админа в списке игроков изменился
+    }
+
+    // ---------- тикеты ----------
+    let tkList = [];
+    let tkCounts = { open: 0, answered: 0, closed: 0, unread: 0 };
+    let tkFilter = 'all';
+    let tkCur = null;            // открытое обращение { uid, id, ... }
+    const tkDrafts = {};
+    const TK_ST = { open: 'ждёт ответа', answered: 'отвечено', closed: 'закрыто' };
+
+    function tkWhen(ts) {
+      try { return new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+      catch (e) { return ''; }
+    }
+    function tkWho(t) { return (t.name || 'Игрок') + (t.username ? ' (@' + t.username + ')' : '') + ' · id ' + t.uid; }
+
+    function updateTkBadge() {
+      const b = document.getElementById('tkMenuBadge');
+      const n = tkCounts.unread || 0;
+      b.style.display = n ? 'inline-block' : 'none';
+      b.textContent = String(n);
+    }
+
+    async function loadTickets(silent) {
+      const r = await api({ action: 'admin_tickets' });
+      if (!r.ok) {
+        if (!silent) document.getElementById('tkList').innerHTML = '<div class="small" style="padding:12px;text-align:center">не удалось загрузить тикеты (' + r.status + ')</div>';
+        return;
+      }
+      tkList = r.data.tickets || [];
+      tkCounts = r.data.counts || tkCounts;
+      updateTkBadge();
+      if (curPage === 'tickets' && !tkCur) renderTickets();
+    }
+
+    function setTkFilter(f) {
+      tkFilter = f;
+      renderTickets();
+    }
+
+    function renderTickets() {
+      document.querySelectorAll('#tkChips .chip').forEach(c => {
+        const f = c.dataset.f;
+        c.classList.toggle('on', f === tkFilter);
+        const n = f === 'all' ? tkList.length : (tkCounts[f] || 0);
+        const base = { all: 'все', open: 'ждут ответа', answered: 'отвечено', closed: 'закрыто' }[f];
+        c.textContent = base + ' · ' + n;
+      });
+      const q = document.getElementById('searchTk').value.trim().toLowerCase().replace(/^@/, '');
+      const box = document.getElementById('tkList');
+      box.innerHTML = '';
+      const list = tkList.filter(t => (tkFilter === 'all' || t.status === tkFilter) &&
+        (!q || [t.name, t.username, t.subject, t.preview, String(t.uid)].some(x => x && String(x).toLowerCase().includes(q))));
+      if (!list.length) { box.innerHTML = '<div class="small" style="padding:16px;text-align:center">' + (tkList.length ? 'ничего не найдено' : 'обращений пока нет') + '</div>'; return; }
+      list.forEach(t => {
+        const row = document.createElement('div');
+        row.className = 'tkrow' + (t.unreadAdmin ? ' unread' : '');
+        row.onclick = () => openTicket(t.uid, t.id);
+
+        const t1 = document.createElement('div'); t1.className = 't1';
+        const b = document.createElement('b'); b.textContent = t.subject;
+        if (t.unreadAdmin) { const n = document.createElement('span'); n.className = 'newdot'; n.textContent = 'НОВОЕ'; b.appendChild(n); }
+        const st = document.createElement('span'); st.className = 'st ' + t.status; st.textContent = TK_ST[t.status] || t.status;
+        t1.appendChild(b); t1.appendChild(st);
+
+        const t2 = document.createElement('div'); t2.className = 't2';
+        t2.textContent = tkWho(t) + ' · ' + tkWhen(t.updatedAt) + ' · сообщений: ' + t.count + (t.files ? ' · 📎 ' + t.files : '');
+        const t3 = document.createElement('div'); t3.className = 't3';
+        t3.textContent = (t.lastFrom === 'admin' ? 'ты: ' : '') + t.preview;
+
+        row.appendChild(t1); row.appendChild(t2); row.appendChild(t3);
+        box.appendChild(row);
+      });
+    }
+
+    function showTkList() {
+      if (tkCur) tkDrafts[tkCur.uid + '_' + tkCur.id] = document.getElementById('tkReply').value;
+      tkCur = null;
+      document.getElementById('tkListView').style.display = 'block';
+      document.getElementById('tkDetailView').style.display = 'none';
+      document.getElementById('pageTitle').textContent = TITLES.tickets;
+      renderTickets();
+      window.scrollTo(0, 0);
+    }
+
+    async function openTicket(uid, id) {
+      const r = await api({ action: 'admin_ticket', uid, id });
+      if (!r.ok) return alert('не удалось открыть обращение (' + ((r.data && r.data.error) || r.status) + ')');
+      // открытое обращение считается прочитанным
+      const p = tkList.find(x => x.id === id && String(x.uid) === String(uid));
+      if (p && p.unreadAdmin) { p.unreadAdmin = false; tkCounts.unread = Math.max(0, (tkCounts.unread || 0) - 1); updateTkBadge(); }
+      showTicket(r.data.ticket);
+    }
+
+    function showTicket(t) {
+      tkCur = t;
+      document.getElementById('tkListView').style.display = 'none';
+      document.getElementById('tkDetailView').style.display = 'block';
+      document.getElementById('pageTitle').textContent = '🎫 Обращение';
+
+      document.getElementById('tkSubject').textContent = t.subject;
+      const st = document.getElementById('tkStatus'); st.className = 'st ' + t.status; st.textContent = TK_ST[t.status] || t.status;
+      const who = document.getElementById('tkWho'); who.innerHTML = '';
+      who.appendChild(document.createTextNode(tkWho(t)));
+      if (t.username && /^[A-Za-z0-9_]{3,32}$/.test(t.username)) {
+        who.appendChild(document.createTextNode(' · '));
+        const a = document.createElement('a'); a.href = 'https://t.me/' + t.username; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'открыть в Telegram'; a.style.color = '#4da6ff';
+        who.appendChild(a);
+      }
+      document.getElementById('tkMeta').textContent = 'создано: ' + tkWhen(t.createdAt) + ' · обновлено: ' + tkWhen(t.updatedAt);
+
+      const files = document.getElementById('tkFiles'); files.innerHTML = '';
+      (t.files || []).forEach((f, i) => {
+        const b = document.createElement('button'); b.className = 'fchip';
+        b.textContent = ((f.type || '').startsWith('image/') ? '🖼 ' : '📄 ') + f.name + ' · ' + tkSize(f.size);
+        b.onclick = () => openTkFile(i, b);
+        files.appendChild(b);
+      });
+
+      const th = document.getElementById('tkThread'); th.innerHTML = '';
+      t.messages.forEach(m => {
+        const d = document.createElement('div'); d.className = 'msg ' + (m.from === 'admin' ? 'admin' : 'user');
+        const w = document.createElement('span'); w.className = 'who'; w.textContent = m.from === 'admin' ? 'ты (поддержка)' : (t.name || 'игрок');
+        const tx = document.createElement('span'); tx.textContent = m.text;
+        const wh = document.createElement('span'); wh.className = 'when'; wh.textContent = tkWhen(m.ts);
+        d.appendChild(w); d.appendChild(tx); d.appendChild(wh);
+        th.appendChild(d);
+      });
+
+      const closed = t.status === 'closed';
+      document.getElementById('tkReplyBox').style.display = closed ? 'none' : 'block';
+      document.getElementById('tkReply').value = tkDrafts[t.uid + '_' + t.id] || '';
+      document.getElementById('tkToggle').textContent = closed ? 'открыть снова' : 'закрыть обращение';
+      window.scrollTo(0, 0);
+    }
+
+    function tkSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' МБ' : Math.max(1, Math.round(n / 1024)) + ' КБ'; }
+
+    async function openTkFile(i, btn) {
+      if (!tkCur) return;
+      const old = btn.textContent; btn.textContent = 'загрузка…'; btn.disabled = true;
+      try {
+        const r = await api({ action: 'admin_ticket_file', uid: tkCur.uid, id: tkCur.id, idx: i });
+        if (!r.ok) throw new Error(r.status);
+        const f = r.data;
+        if ((f.type || '').startsWith('image/') && f.type !== 'image/svg+xml') {
+          const ov = document.createElement('div');
+          ov.style.cssText = 'position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out';
+          const img = document.createElement('img'); img.src = f.data; img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain';
+          ov.appendChild(img); ov.onclick = () => ov.remove(); document.body.appendChild(ov);
+        } else {
+          const a = document.createElement('a'); a.href = f.data; a.download = f.name || 'file';
+          document.body.appendChild(a); a.click(); a.remove();
+        }
+      } catch (e) { alert('не удалось открыть файл'); }
+      btn.textContent = old; btn.disabled = false;
+    }
+
+    async function sendReply(close) {
+      if (!tkCur) return;
+      const ta = document.getElementById('tkReply');
+      const text = ta.value.trim();
+      if (!text) return alert('напиши текст ответа');
+      const b1 = document.getElementById('tkSend'), b2 = document.getElementById('tkSendClose');
+      b1.disabled = b2.disabled = true;
+      const r = await api({ action: 'admin_ticket_reply', uid: tkCur.uid, id: tkCur.id, text, close: !!close });
+      b1.disabled = b2.disabled = false;
+      if (!r.ok) {
+        const e = r.data && r.data.error;
+        return alert(e === 'too_many' ? 'в обращении слишком много сообщений' : 'не удалось отправить ответ (' + (e || r.status) + ')');
+      }
+      delete tkDrafts[tkCur.uid + '_' + tkCur.id];
+      showTicket(r.data.ticket);
+      loadTickets(true);
+    }
+
+    async function toggleTkStatus() {
+      if (!tkCur) return;
+      const next = tkCur.status === 'closed' ? 'open' : 'closed';
+      const r = await api({ action: 'admin_ticket_status', uid: tkCur.uid, id: tkCur.id, status: next });
+      if (!r.ok) return alert('не получилось сменить статус');
+      showTicket(r.data.ticket);
+      loadTickets(true);
+    }
+
+    async function deleteTicket() {
+      if (!tkCur) return;
+      if (!confirm('удалить обращение «' + tkCur.subject + '» вместе с перепиской и файлами? Игрок тоже перестанет его видеть.')) return;
+      const r = await api({ action: 'admin_ticket_delete', uid: tkCur.uid, id: tkCur.id });
+      if (!r.ok) return alert('не получилось удалить');
+      tkCur = null;
+      showTkList();
+      loadTickets();
+    }
+
+    // ---------- банк: кому открыт доступ ----------
+    let bankSel = null;
+    let bankFilter = 'all';
+    const BANK_LABEL = { button: 'кнопка в игре', full: 'вместо игры', admin: 'админ' };
+
+    function bankUrl() { return location.origin + '/bank.html'; }
+    async function copyBankUrl() {
+      let ok = false;
+      try { await navigator.clipboard.writeText(bankUrl()); ok = true; } catch (e) {}
+      alert(ok ? 'адрес скопирован: ' + bankUrl() : 'скопируй вручную: ' + bankUrl());
+    }
+    let bankLog = null, blFilter = 'all';
+    function setBlFilter(f) { blFilter = f; renderBankLog(); }
+    async function loadBankLog() {
+      const box = document.getElementById('blList');
+      if (!bankLog) box.innerHTML = '<div class="small" style="padding:12px;text-align:center">загрузка…</div>';
+      const r = await api({ action: 'admin_bank_log' });
+      if (r.ok && r.data) bankLog = r.data.log || [];
+      else if (!bankLog) { box.innerHTML = '<div class="small" style="padding:12px;text-align:center">не удалось загрузить журнал</div>'; return; }
+      renderBankLog();
+    }
+    function renderBankLog() {
+      document.querySelectorAll('#blChips .chip').forEach(c => c.classList.toggle('on', c.dataset.f === blFilter));
+      const box = document.getElementById('blList');
+      if (!bankLog) return;
+      box.innerHTML = '';
+      const q = document.getElementById('searchBl').value.trim().toLowerCase().replace(/^@/, '');
+      const list = bankLog.filter(e => (blFilter === 'all' || e.type === blFilter) &&
+        (!q || [e.fromName, e.toName, e.from, e.to, e.note].some(x => x && String(x).toLowerCase().includes(q))));
+      if (!list.length) { box.innerHTML = '<div class="small" style="padding:12px;text-align:center">' + (bankLog.length ? 'ничего не найдено' : 'операций пока нет') + '</div>'; return; }
+      const cur = e => fmt(e.amount) + (e.currency === 'diamonds' ? ' 💎' : ' монет');
+      list.forEach(e => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:10px 4px;border-top:1px solid rgba(255,255,255,.08);font-size:13px;line-height:1.45';
+        const who = (n, id) => (n || '—') + ' (' + id + ')';
+        let head, color = '#fff';
+        if (e.type === 'transfer') { head = (e.viaRequest ? '✅ оплачен запрос: ' : '💸 перевод: ') + cur(e); color = '#7bd88f'; }
+        else if (e.type === 'request') { head = '🙏 запрос: ' + cur(e); color = '#6fb6ff'; }
+        else { head = '❌ запрос отклонён: ' + cur(e); color = '#ff8a8a'; }
+        const h = document.createElement('b'); h.style.color = color; h.textContent = head;
+        const d = document.createElement('div');
+        d.textContent = e.type === 'transfer'
+          ? who(e.fromName, e.from) + ' → ' + who(e.toName, e.to)
+          : e.type === 'request'
+            ? who(e.fromName, e.from) + ' просит у ' + who(e.toName, e.to)
+            : who(e.toName, e.to) + ' отклонил запрос от ' + who(e.fromName, e.from);
+        const t = document.createElement('div'); t.className = 'small'; t.textContent = banWhen(e.ts) + (e.note ? ' · «' + e.note + '»' : '');
+        row.appendChild(h); row.appendChild(d); row.appendChild(t);
+        box.appendChild(row);
+      });
+    }
+
+    function setBankFilter(f) { bankFilter = f; renderBankList(); }
+
+    function renderBank() {
+      if (!document.getElementById('page-bank').classList.contains('active')) return;
+      const has = players.filter(p => p.bank === 'button' || p.bank === 'full');
+      document.getElementById('bkStAll').textContent = fmt(has.length);
+      document.getElementById('bkStBtn').textContent = fmt(players.filter(p => p.bank === 'button').length);
+      document.getElementById('bkStFull').textContent = fmt(players.filter(p => p.bank === 'full').length);
+      renderBankList();
+      renderBankCard();
+    }
+
+    function renderBankList() {
+      document.querySelectorAll('#bankChips .chip').forEach(c => c.classList.toggle('on', c.dataset.f === bankFilter));
+      const q = document.getElementById('searchBank').value.trim().toLowerCase().replace(/^@/, '');
+      const box = document.getElementById('listBank');
+      box.innerHTML = '';
+      const list = players.filter(p => (bankFilter === 'all' || (p.bank && p.bank !== 'off')) &&
+        (!q || [pname(p), p.username, p.nickname, String(p.id)].some(x => x && String(x).toLowerCase().includes(q))));
+      if (!list.length) { box.innerHTML = '<div class="small" style="padding:12px;text-align:center">' + (players.length ? 'никого не найдено' : 'список игроков пуст') + '</div>'; return; }
+      list.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'pl' + (String(p.id) === String(bankSel) ? ' sel' : '');
+        row.onclick = () => {
+          bankSel = String(p.id);
+          renderBankList(); renderBankCard();
+          const c = document.getElementById('bankCard');
+          setTimeout(() => c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+        };
+        const rk = document.createElement('div'); rk.className = 'rk'; rk.textContent = String(i + 1);
+        const nm = document.createElement('div'); nm.className = 'nm';
+        const b = document.createElement('b'); b.textContent = pname(p) + (String(p.id) === MY_ID ? ' (вы)' : '');
+        if (p.isAdmin) b.classList.add('adm');
+        if (p.bank && p.bank !== 'off') { const t = document.createElement('span'); t.className = 'bktag'; t.textContent = BANK_LABEL[p.bank] || p.bank; b.appendChild(t); }
+        const sp = document.createElement('span');
+        sp.textContent = (p.username ? '@' + p.username : 'без username') + ' · ' + p.id;
+        nm.appendChild(b); nm.appendChild(sp);
+        row.appendChild(rk); row.appendChild(mkAva(p, 40)); row.appendChild(nm);
+        box.appendChild(row);
+      });
+    }
+
+    function renderBankCard() {
+      const p = players.find(x => String(x.id) === String(bankSel));
+      const card = document.getElementById('bankCard');
+      if (!p) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      setAva('bankAva', p, 64);
+      const t = document.getElementById('bankTitle');
+      t.textContent = pname(p) + (String(p.id) === MY_ID ? ' (вы)' : '');
+      t.classList.toggle('adm', !!p.isAdmin);
+      document.getElementById('bankSub').textContent = (p.username ? '@' + p.username : 'без username') + ' · id ' + p.id;
+      const isAdm = p.bank === 'admin';
+      document.querySelectorAll('#bankModes .modebtn').forEach(b => {
+        b.classList.toggle('on', !isAdm && (p.bank || 'off') === b.dataset.m);
+        b.disabled = isAdm;
+        b.style.opacity = isAdm ? '.45' : '1';
+      });
+      document.getElementById('bankNote').textContent = isAdm
+        ? 'у админа банк есть всегда и открывается по ссылке из бота — менять нечего'
+        : 'доступ меняется сразу, а у игрока в игре — при открытии игры или в течение минуты';
+    }
+
+    async function setBankMode(mode) {
+      const p = players.find(x => String(x.id) === String(bankSel));
+      if (!p) return alert('выбери игрока');
+      if ((p.bank || 'off') === mode) return;
+      const names = { off: 'отключить банк', button: 'открыть банк кнопкой в игре', full: 'заменить игру банком' };
+      const extra = mode === 'full' ? '\n\nигрок больше не увидит обычную игру — только банк.' : '';
+      if (!confirm(names[mode] + ' у «' + pname(p) + '»?' + extra)) return;
+      const r = await api({ action: 'admin_update', targetId: String(p.id), act: 'bankMode', value: mode });
+      if (!r.ok) {
+        const e = r.data && r.data.error;
+        return alert(e === 'cant_set_admin' ? 'админу ничего менять не нужно: у него банк есть всегда' : 'не получилось (' + (e || r.status) + ')');
+      }
+      const i = players.findIndex(x => String(x.id) === String(p.id));
+      if (i >= 0) players[i] = r.data.summary;
+      details[String(p.id)] = r.data.state;
+      renderAll();
+    }
+
+    // раз в минуту обновляем счётчик новых обращений (и список, если он открыт)
+    setInterval(() => {
+      if (document.visibilityState !== 'visible' || document.getElementById('panel').style.display !== 'block') return;
+      loadTickets(true);
+    }, 60000);
+
+    (async function start() {
+      try {
+        if (!initData) { deny('открой админку через Telegram (в боте)'); return; }
+        const w = await api({ action: 'whoami' });
+        if (!w.ok) { deny('не удалось проверить доступ, попробуй позже'); return; }
+        if (!w.data.isAdmin) { deny('доступ запрещён'); return; }
+        document.getElementById('mode').textContent = 'режим: админ (Telegram id ' + MY_ID + ')';
+        document.getElementById('panel').style.display = 'block';
+        const wantTab = new URLSearchParams(location.search).get('tab');
+        if (wantTab === 'tickets') showTab('tickets');
+        if (wantTab === 'bank') showTab('bank');
+        loadTickets(true);
+        await loadPlayers();
+      } catch (e) {
+        deny('ошибка загрузки админки');
+      }
+    })();
+</script>
+</body>
+</html>

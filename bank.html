@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Lowkie Bank</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="bank.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div id="bankApp">
+
+    <!-- sidebar (desktop) -->
+    <nav class="bk-sidebar" aria-label="Разделы">
+      <div class="bk-sidebar-brand">
+        <img src="images/monetka.png" alt="" class="bk-sidebar-coin">
+        <span>Lowkie Bank</span>
+      </div>
+      <button class="bk-navitem active" data-tab="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+        <span>Главная</span>
+      </button>
+      <button class="bk-navitem" data-tab="services">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Сервисы</span>
+      </button>
+      <button class="bk-navitem" data-tab="invest">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M11 19V5"/><path d="M18 19v-7"/><path d="M3 19h18"/></svg>
+        <span>Инвестиции</span>
+      </button>
+      <button class="bk-navitem" data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.6-4 5-6 8-6s6.4 2 8 6"/></svg>
+        <span>Профиль</span>
+      </button>
+    </nav>
+
+    <div class="bk-shell">
+
+      <!-- top bar -->
+      <div class="bk-topbar">
+        <div class="bk-topbar-left">
+          <!-- стрелка «назад в игру»: видна только тем, у кого банк открыт кнопкой из игры -->
+          <button class="bk-back" id="bkBack" aria-label="Назад в игру" title="Назад в игру">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          </button>
+          <div class="bk-hello">
+            <div class="bk-hello-line">С возвращением,</div>
+            <div class="bk-hello-name" id="bkNick">telegram_nik</div>
+          </div>
+        </div>
+        <button class="bk-bell" id="bkBell" aria-label="Уведомления" title="Уведомления">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="bk-bell-count" id="bkBellCount" hidden>0</span>
+        </button>
+      </div>
+
+      <div class="bk-main">
+
+        <!-- ================= HOME ================= -->
+        <section class="bk-page active" data-page="home">
+
+          <div class="bk-balance-wrap">
+            <div class="bk-balance-card" id="bkBalanceCard">
+              <div class="bk-balance-track" id="bkBalanceTrack">
+
+                <div class="bk-balance-face bk-face-coins">
+                  <div class="bk-balance-glow"></div>
+                  <div class="bk-balance-top">
+                    <span class="bk-balance-label">Баланс монет</span>
+                    <img src="images/monetka.png" alt="" class="bk-balance-icon">
+                  </div>
+                  <div class="bk-balance-amount" id="bkCoinsAmount">0</div>
+                  <div class="bk-balance-sub" id="bkCoinsSub">за клик 1 · энергия: 100/100</div>
+                </div>
+
+                <div class="bk-balance-face bk-face-diamonds">
+                  <div class="bk-balance-glow"></div>
+                  <div class="bk-balance-top">
+                    <span class="bk-balance-label">Баланс алмазов</span>
+                    <img src="images/diamond.png" alt="" class="bk-balance-icon">
+                  </div>
+                  <div class="bk-balance-amount" id="bkDiamondsAmount">0</div>
+                  <div class="bk-balance-sub" id="bkDiamondsSub">Доход 0 алм/час</div>
+                </div>
+
+              </div>
+              <div class="bk-balance-dots">
+                <span class="bk-dot active" data-face="0"></span>
+                <span class="bk-dot" data-face="1"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bk-actions">
+            <button class="bk-action" id="bkOpenTopup">
+              <span class="bk-action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12h14"/></svg>
+              </span>
+              <span>Пополнить</span>
+            </button>
+            <button class="bk-action" id="bkOpenTransfer">
+              <span class="bk-action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3 21 7l-4 4"/><path d="M3 11V9a2 2 0 0 1 2-2h16"/><path d="M7 21 3 17l4-4"/><path d="M21 13v2a2 2 0 0 1-2 2H3"/></svg>
+              </span>
+              <span>Перевести</span>
+            </button>
+            <button class="bk-action" id="bkOpenHistory">
+              <span class="bk-action-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 3"/></svg>
+              </span>
+              <span>Все операции</span>
+            </button>
+          </div>
+
+          <button class="bk-wide" id="bkOpenRequest">
+            <span class="bk-action-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+            </span>
+            <span class="bk-wide-text">
+              <div class="bk-wide-title">Запросить деньги</div>
+              <div class="bk-wide-desc">Попроси монеты или алмазы у игрока с доступом к банку</div>
+            </span>
+            <span class="bk-wide-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </span>
+          </button>
+
+          <button class="bk-lastop" id="bkOpenHistory2">
+            <span class="bk-lastop-label">Последняя операция</span>
+            <span class="bk-lastop-value" id="bkLastOp">нет операций</span>
+          </button>
+
+          <div class="bk-shortcuts">
+            <button class="bk-shortcut" data-tab="services">
+              <div class="bk-shortcut-title">Сервисы</div>
+              <div class="bk-shortcut-desc">мини-игры, улучшения, скины</div>
+            </button>
+            <button class="bk-shortcut" data-tab="invest">
+              <div class="bk-shortcut-title">Инвестиции</div>
+              <div class="bk-shortcut-desc">обменять монеты на алмазы</div>
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ================= SERVICES ================= -->
+        <section class="bk-page" data-page="services">
+          <div class="bk-subnav" id="bkServicesNav">
+            <button class="bk-pill active" data-svc="games">мини-игры</button>
+            <button class="bk-pill" data-svc="upgrades">улучшения</button>
+          </div>
+
+          <div class="bk-panelbox" id="bkGamesSlot"></div>
+          <div class="bk-panelbox" id="bkUpgradesSlot" style="display:none"></div>
+        </section>
+
+        <!-- ================= INVEST ================= -->
+        <section class="bk-page" data-page="invest">
+          <div class="bk-invest-card">
+            <div class="bk-invest-head">
+              <div>
+                <div class="bk-invest-pair">АЛМАЗЫ / LOWKCOIN</div>
+                <div class="bk-invest-note">торговать на бирже</div>
+              </div>
+              <div class="bk-invest-price" id="bkInvestPrice">—</div>
+            </div>
+            <div class="bk-invest-balances">
+              <div class="bk-invest-bal">
+                <img src="images/monetka.png" alt="">
+                <span id="bkInvestCoins">0</span>
+              </div>
+              <div class="bk-invest-bal">
+                <img src="images/diamond.png" alt="">
+                <span id="bkInvestDiamonds">0</span>
+              </div>
+            </div>
+            <button class="bk-invest-btn" id="bkOpenMarket">торговать</button>
+          </div>
+
+          <div class="bk-invest-card bk-invest-farm">
+            <div class="bk-invest-head">
+              <div>
+                <div class="bk-invest-pair">ферма алмазов</div>
+                <div class="bk-invest-note">пассивный доход алмазов в час</div>
+              </div>
+              <div class="bk-invest-price" id="bkDiamondRate">0/час</div>
+            </div>
+            <button class="bk-invest-btn bk-invest-btn-ghost" id="bkOpenDiamondFarm">прокачать ферму</button>
+          </div>
+        </section>
+
+        <!-- ================= PROFILE ================= -->
+        <section class="bk-page" data-page="profile">
+          <div class="bk-profile-card">
+            <div class="bk-profile-avatar">L</div>
+            <div class="bk-profile-name" id="bkProfileNick">telegram_nik</div>
+            <div class="bk-profile-rank" id="bkProfileRank">новичок лоуки</div>
+            <div class="bk-profile-progress">
+              <div class="bk-profile-progress-fill" id="bkProfileProgressFill"></div>
+            </div>
+            <div class="bk-profile-level" id="bkProfileLevel">уровень 1/12</div>
+          </div>
+
+          <div class="bk-stats-grid">
+            <div class="bk-stat"><span class="bk-stat-label">монеты</span><span class="bk-stat-value" id="bkStatCoins">0</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">алмазы</span><span class="bk-stat-value" id="bkStatDiamonds">0</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">за клик</span><span class="bk-stat-value" id="bkStatPerClick">1</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">энергия</span><span class="bk-stat-value" id="bkStatEnergy">100/100</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">пассив монет</span><span class="bk-stat-value" id="bkStatPassive">0/час</span></div>
+            <div class="bk-stat"><span class="bk-stat-label">пассив алмазов</span><span class="bk-stat-value" id="bkStatDiamondRate">0/час</span></div>
+          </div>
+
+          <div class="bk-list">
+            <button class="bk-list-item" id="bkOpenSupport">
+              <span>служба поддержки</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <button class="bk-list-item" id="bkOpenNews">
+              <span>новости</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- bottom nav (mobile) -->
+      <nav class="bk-bottomnav" aria-label="Разделы">
+        <button class="bk-navitem active" data-tab="home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+          <span>Главная</span>
+        </button>
+        <button class="bk-navitem" data-tab="services">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Сервисы</span>
+        </button>
+        <button class="bk-navitem" data-tab="invest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"/><path d="M11 19V5"/><path d="M18 19v-7"/><path d="M3 19h18"/></svg>
+          <span>Инвестиции</span>
+        </button>
+        <button class="bk-navitem" data-tab="profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.6-4 5-6 8-6s6.4 2 8 6"/></svg>
+          <span>Профиль</span>
+        </button>
+      </nav>
+
+    </div>
+
+    <!-- ============ шторка: пополнить (тапаем по лоуки) ============ -->
+    <div class="bk-sheet-overlay" id="bkTopupOverlay">
+      <div class="bk-sheet" id="bkTopupSheet">
+        <div class="bk-sheet-handle"></div>
+        <div class="bk-sheet-header">
+          <div class="bk-sheet-title">Пополнить</div>
+          <button class="bk-sheet-close" id="bkCloseTopup" aria-label="закрыть">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="bk-sheet-desc">Тапай по лоуки, чтобы пополнить баланс монет</div>
+        <div class="bk-sheet-body" id="bkTapSlot"></div>
+      </div>
+    </div>
+
+    <!-- ============ шторка: перевод / запрос денег (одна форма на двоих) ============ -->
+    <div class="bk-sheet-overlay" id="bkMoneyOverlay">
+      <div class="bk-sheet" id="bkMoneySheet">
+        <div class="bk-sheet-handle"></div>
+        <div class="bk-sheet-header">
+          <div class="bk-sheet-title" id="bkMoneyTitle">Перевести</div>
+          <button class="bk-sheet-close" id="bkCloseMoney" aria-label="закрыть">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="bk-sheet-desc" id="bkMoneyDesc"></div>
+
+        <!-- шаг 1: форма -->
+        <div class="bk-sheet-body" id="bkMoneyForm">
+          <div class="bk-field">
+            <span id="bkToLabel">Получатель</span>
+            <div id="bkPick">
+              <input type="text" id="bkPickSearch" autocomplete="off" placeholder="Найти игрока по нику">
+              <div class="bk-plist" id="bkPickList"></div>
+            </div>
+            <div class="bk-recipient ok" id="bkRecipient" hidden></div>
+          </div>
+
+          <div class="bk-seg" id="bkCurSeg">
+            <button type="button" class="active" data-cur="coins"><img src="images/monetka.png" alt="">Монеты</button>
+            <button type="button" data-cur="diamonds"><img src="images/diamond.png" alt="">Алмазы</button>
+          </div>
+
+          <label class="bk-field">
+            <span>Сумма <em id="bkAvail"></em></span>
+            <span class="bk-amtwrap">
+              <input type="text" id="bkAmount" inputmode="numeric" autocomplete="off" placeholder="0">
+              <button type="button" class="bk-max" id="bkMax">макс</button>
+            </span>
+          </label>
+          <div class="bk-preview" id="bkPreview"></div>
+
+          <label class="bk-field" id="bkCommentWrap">
+            <span>Комментарий (необязательно)</span>
+            <input type="text" id="bkComment" maxlength="80" autocomplete="off" placeholder="например: за пиццу">
+          </label>
+
+          <div class="bk-err" id="bkMoneyErr"></div>
+          <button type="button" class="bk-btn" id="bkMoneySubmit">Далее</button>
+        </div>
+
+        <!-- шаг 2: подтверждение перевода -->
+        <div class="bk-sheet-body" id="bkMoneyConfirm" hidden>
+          <div class="bk-sum" id="bkSum"></div>
+          <div class="bk-err" id="bkConfirmErr"></div>
+          <button type="button" class="bk-btn" id="bkConfirmYes">Подтвердить перевод</button>
+          <button type="button" class="bk-btn ghost" id="bkConfirmBack">Назад</button>
+        </div>
+
+        <!-- шаг 3: готово -->
+        <div class="bk-sheet-body" id="bkMoneyDone" hidden>
+          <div class="bk-done">
+            <div class="bk-done-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            </div>
+            <div class="bk-done-title" id="bkDoneTitle">Готово</div>
+            <div class="bk-done-text" id="bkDoneText"></div>
+          </div>
+          <button type="button" class="bk-btn" id="bkDoneBtn">Отлично</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ шторка: уведомления (запросы денег) ============ -->
+    <div class="bk-sheet-overlay" id="bkBellOverlay">
+      <div class="bk-sheet tall" id="bkBellSheet">
+        <div class="bk-sheet-handle"></div>
+        <div class="bk-sheet-header">
+          <div class="bk-sheet-title">Уведомления</div>
+          <button class="bk-sheet-close" id="bkCloseBell" aria-label="закрыть">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="bk-sheet-desc">Запросы денег от игроков, у которых тоже есть банк</div>
+        <div class="bk-sheet-body">
+          <div class="bk-seg" id="bkInboxTabs">
+            <button type="button" class="active" data-tab="in">Входящие</button>
+            <button type="button" data-tab="out">Отправленные</button>
+          </div>
+          <div id="bkInboxList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bk-toast" id="bkToast" role="status"></div>
+  </div>
+
+  <!-- Игра берётся прямо из index.html (одна копия на двоих): всё, что ты меняешь в index.html — новости, FAQ,
+       новые мини-игры — автоматически появляется и в банке. Игровые блоки лежат за экраном, банк их только показывает. -->
+  <div id="gameRoot" aria-hidden="true"></div>
+  <div id="gameModals"></div>
+  <script>
+    (function () {
+      try {
+        var x = new XMLHttpRequest();
+        x.open('GET', 'index.html', false);
+        x.send(null);
+        if (x.status !== 200) throw new Error('index.html ' + x.status);
+        var doc = new DOMParser().parseFromString(x.responseText, 'text/html');
+        var root = document.getElementById('gameRoot');
+        var modals = document.getElementById('gameModals');
+        Array.prototype.slice.call(doc.body.children).forEach(function (el) {
+          if (el.tagName === 'SCRIPT' || el.id === 'openBankBtn') return;
+          var isGame = el.tagName === 'HEADER' || el.tagName === 'MAIN' || (el.tagName === 'DIV' && el.classList.contains('top'));
+          (isGame ? root : modals).appendChild(document.importNode(el, true));
+        });
+      } catch (e) {
+        var d = document.createElement('div');
+        d.className = 'bk-fatal';
+        d.textContent = 'Не удалось загрузить банк. Проверь интернет и открой его заново.';
+        document.getElementById('bankApp').appendChild(d);
+        throw e;
+      }
+    })();
+  </script>
+  <script src="script.js"></script>
+  <script src="cloud.js"></script>
+  <script src="bank.js"></script>
+</body>
+</html>
