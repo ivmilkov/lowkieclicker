@@ -1036,6 +1036,26 @@ export default async (req) => {
   if (body.action === 'top') {
     let top = (await lb.get('top', { type: 'json' })) || { entries: {} };
 
+    // сверка таблицы с настоящими балансами: не чаще раза в минуту читаем записи игроков из топа
+    // и исправляем суммы, которые устарели (потратил монеты, сбросил прогресс, забанен)
+    try {
+      const nowV = Date.now();
+      if (!globalThis.__lbVerifyAt || nowV - globalThis.__lbVerifyAt > 60_000) {
+        globalThis.__lbVerifyAt = nowV;
+        const ids = Object.keys(top.entries || {});
+        const recs = await Promise.all(ids.map(id => store.get(`u_${id}`, { type: 'json' }).catch(() => undefined)));
+        let changed = false;
+        ids.forEach((id, i) => {
+          const r = recs[i];
+          if (r === undefined) return;                       // не смогли прочитать — не трогаем
+          const real = r && r.state && !activeBan(r) ? Math.floor(Number(r.state.total) || 0) : 0;
+          if (!(real > 0)) { delete top.entries[id]; changed = true; }
+          else if (top.entries[id].t !== real) { top.entries[id].t = real; changed = true; }
+        });
+        if (changed) { top.updatedAt = nowV; await lb.setJSON('top', top); }
+      }
+    } catch (e) { console.error('leaderboard verify failed', e); }
+
     // игрок уже есть на сервере, но ещё не в таблице (например, не сохранялся после обновления) — добавим его
     if (current && current.state && !(top.entries && top.entries[String(user.id)])) {
       const t = Math.floor(Number(current.state.total));
