@@ -897,6 +897,19 @@ export default async (req) => {
   }
 
   if (body.action === 'load') {
+    // «починка» таблицы лидеров: если игрок давно ничего не сохранял, а сумма в таблице отличается от его баланса
+    // (например, потратил монеты, и последнее сохранение попало в паузу), подтягиваем актуальную сумму
+    if (current && current.state && !activeBan(current)) {
+      try {
+        const tot = Math.floor(Number(current.state.total) || 0);
+        const heal = (globalThis.__lbHeal = globalThis.__lbHeal || {});
+        const nowH = Date.now();
+        if (tot > 0 && tot !== current.lbTotal && nowH - (current.updatedAt || 0) > LB_UPDATE_EVERY && nowH - (heal[user.id] || 0) > 600_000) {
+          heal[user.id] = nowH;
+          await updateTop(lb, String(user.id), displayName(user), tot, safePhoto(current.photoUrl || user.photo_url));
+        }
+      } catch (e) { console.error('leaderboard heal failed', e); }
+    }
     if (!current || (current.refReset && body.hadProgress !== true)) { try { await ensureRefMarker(refStore, store, user, body.hadProgress === true); } catch (e) { console.error('ref marker failed', e); } }
     return json({ exists: !!current, record: publicRecord(current) || null, bank: bankModeOf(user.id, current) });
   }
@@ -1023,6 +1036,26 @@ export default async (req) => {
   if (body.action === 'top') {
     let top = (await lb.get('top', { type: 'json' })) || { entries: {} };
 
+    // сверка таблицы с настоящими балансами: не чаще раза в минуту читаем записи игроков из топа
+    // и исправляем суммы, которые устарели (потратил монеты, сбросил прогресс, забанен)
+    try {
+      const nowV = Date.now();
+      if (!globalThis.__lbVerifyAt || nowV - globalThis.__lbVerifyAt > 60_000) {
+        globalThis.__lbVerifyAt = nowV;
+        const ids = Object.keys(top.entries || {});
+        const recs = await Promise.all(ids.map(id => store.get(`u_${id}`, { type: 'json' }).catch(() => undefined)));
+        let changed = false;
+        ids.forEach((id, i) => {
+          const r = recs[i];
+          if (r === undefined) return;                       // не смогли прочитать — не трогаем
+          const real = r && r.state && !activeBan(r) ? Math.floor(Number(r.state.total) || 0) : 0;
+          if (!(real > 0)) { delete top.entries[id]; changed = true; }
+          else if (top.entries[id].t !== real) { top.entries[id].t = real; changed = true; }
+        });
+        if (changed) { top.updatedAt = nowV; await lb.setJSON('top', top); }
+      }
+    } catch (e) { console.error('leaderboard verify failed', e); }
+
     // игрок уже есть на сервере, но ещё не в таблице (например, не сохранялся после обновления) — добавим его
     if (current && current.state && !(top.entries && top.entries[String(user.id)])) {
       const t = Math.floor(Number(current.state.total));
@@ -1092,7 +1125,10 @@ export default async (req) => {
     const now = Date.now();
     const name = displayName(user);
     // обнуление (сброс прогресса) отражаем в таблице сразу, не дожидаясь паузы
-    const lbDue = !current || now - (current.lbAt || 0) > LB_UPDATE_EVERY || !(Number(st.total) > 0);
+    // баланс упал (потратил монеты) — тоже обновляем сразу: иначе в таблице надолго остаётся старая, завышенная сумма
+    const lbTotalNow = Math.floor(Number(st.total) || 0);
+    const lbDropped = !!current && Number.isFinite(current.lbTotal) && lbTotalNow < current.lbTotal;
+    const lbDue = !current || now - (current.lbAt || 0) > LB_UPDATE_EVERY || lbDropped || !(Number(st.total) > 0);
 
     const record = {
       rev: curRev + 1,
@@ -1104,6 +1140,7 @@ export default async (req) => {
       name,
       photoUrl: safePhoto(user.photo_url),
       lbAt: lbDue ? now : (current.lbAt || 0),
+      lbTotal: lbDue ? lbTotalNow : (current && Number.isFinite(current.lbTotal) ? current.lbTotal : undefined),
       updatedAt: now,
       spent: current && current.spent,
       spendLog: current && current.spendLog
