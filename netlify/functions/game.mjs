@@ -911,7 +911,12 @@ export default async (req) => {
       } catch (e) { console.error('leaderboard heal failed', e); }
     }
     if (!current || (current.refReset && body.hadProgress !== true)) { try { await ensureRefMarker(refStore, store, user, body.hadProgress === true); } catch (e) { console.error('ref marker failed', e); } }
-    return json({ exists: !!current, record: publicRecord(current) || null, bank: bankModeOf(user.id, current) });
+    // есть ли у игрока ещё не выданная реферальная награда: тогда игра сразу отправляет сохранение, и бонус приходит без тапов
+    let refPending = false;
+    if (!current || current.refReset) {
+      try { const mk = await refStore.get(`r_${user.id}`, { type: 'json' }); refPending = !!(mk && mk.by && !mk.done); } catch (e) {}
+    }
+    return json({ exists: !!current, record: publicRecord(current) || null, bank: bankModeOf(user.id, current), refPending });
   }
 
   // ---------- банк ----------
