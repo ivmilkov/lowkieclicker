@@ -315,6 +315,9 @@
       }
     }
 
+    // сервер ждёт первое сохранение, чтобы выдать реферальную награду (аккаунт был сброшен «как новый») — отправляем сразу
+    if (r.data.refPending) setDirty(true);
+
     ready = true;
     if (!state.nickOverride && state.nickname !== nick) {
       state.nickname = nick;
