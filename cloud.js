@@ -12,7 +12,7 @@
   const DIRTY_KEY = 'lowkie_cloud_dirty';
   const DEVICE_KEY = 'lowkie_cloud_device';
   const EXTRA_KEYS = ['lowkie_little_last', 'lowkie_wheel_last'];
-  const MAX_HISTORY = 200;
+  const MAX_HISTORY = 300;
 
   const tgUser = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
   const uid = tgUser.id;
@@ -920,6 +920,91 @@
     try { await migrateLocalTickets(); } catch (e) { console.warn('[cloud] migrate tickets', e); }
     await loadTickets();
     setInterval(() => { if (ready && document.visibilityState === 'visible') loadTickets(); }, 60000);
+  }
+
+  // =====================================================================
+  // ПОЛНАЯ ИСТОРИЯ ОПЕРАЦИЙ: все записи с самого первого дня хранятся на сервере (привязаны к Telegram-аккаунту).
+  // В игре лежит только свежий «хвост», остальное подгружается при открытии истории.
+  // =====================================================================
+  const HS_KEY = 'lowkie_hist_sent';
+  const hSent = new Set();
+  try { JSON.parse(localStorage.getItem(HS_KEY) || '[]').forEach(x => hSent.add(String(x))); } catch (e) {}
+  let hBusy = false;
+
+  async function syncHistory() {
+    if (!ready || hBusy || adopting || banned) return;
+    const list = Array.isArray(state.history) ? state.history : [];
+    const fresh = list.filter(e => e && e.id != null && !hSent.has(String(e.id))).slice(0, 300);
+    if (!fresh.length) return;
+    hBusy = true;
+    try {
+      const r = await api({ action: 'hist_add', items: fresh });
+      if (r.ok) {
+        fresh.forEach(e => hSent.add(String(e.id)));
+        try { localStorage.setItem(HS_KEY, JSON.stringify(Array.from(hSent).slice(-1500))); } catch (e) {}
+        if (list.length > 300) setTimeout(syncHistory, 200); // если записей накопилось много — досылаем пачками
+      }
+    } catch (e) {} finally { hBusy = false; }
+  }
+  setInterval(syncHistory, 5000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') syncHistory(); });
+
+  const HV = { older: [], nextIdx: null, loaded: false, loading: false };   // nextIdx: следующая (более старая) страница, -1 = больше нет
+  async function loadHistPage(idx) {
+    if (HV.loading) return;
+    HV.loading = true;
+    try {
+      const r = await api(idx == null ? { action: 'hist_page' } : { action: 'hist_page', idx });
+      if (r.ok && r.data) {
+        HV.older = HV.older.concat(r.data.items || []);
+        HV.nextIdx = r.data.idx - 1;
+        HV.loaded = true;
+      }
+    } catch (e) {} finally { HV.loading = false; }
+  }
+  function histView() {
+    const map = new Map();
+    HV.older.forEach(e => { if (e && e.id != null) map.set(String(e.id), e); });
+    (Array.isArray(state.history) ? state.history : []).forEach(e => { if (e && e.id != null) map.set(String(e.id), e); });
+    return Array.from(map.values()).sort((a, b) => (b.date || 0) - (a.date || 0));
+  }
+  if (typeof renderHistoryList === 'function') {
+    const origRenderHistory = renderHistoryList;
+    renderHistoryList = function () {
+      const keep = state.history;
+      state.history = histView();
+      try { origRenderHistory(); } finally { state.history = keep; }
+      const box = document.getElementById('historyList');
+      if (box && HV.nextIdx != null && HV.nextIdx >= 0) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-start';
+        btn.style.cssText = 'margin:14px auto 30px;display:block';
+        btn.textContent = HV.loading ? 'загрузка…' : 'показать более старые операции';
+        btn.addEventListener('click', async () => { btn.textContent = 'загрузка…'; await loadHistPage(HV.nextIdx); renderHistoryList(); });
+        box.appendChild(btn);
+      }
+    };
+    const openBtn = document.getElementById('openHistoryBtn');
+    if (openBtn) openBtn.addEventListener('click', async () => {
+      if (!ready) return;
+      if (!HV.loaded) {
+        await syncHistory();
+        await loadHistPage();
+        if (HV.older.length < 80 && HV.nextIdx >= 0) await loadHistPage(HV.nextIdx);
+      } else {
+        await syncHistory();
+      }
+      renderHistoryList();
+    });
+    const searchEl = document.getElementById('historySearch');
+    if (searchEl) searchEl.addEventListener('input', async () => {
+      // при поиске подгружаем всю историю, чтобы искать по всем операциям
+      if (searchEl.value.trim() && HV.nextIdx != null) {
+        let guard = 0;
+        while (HV.nextIdx >= 0 && guard++ < 200) { await loadHistPage(HV.nextIdx); }
+      }
+      renderHistoryList();
+    });
   }
 
   init().then(hideOverlay).catch(e => {
