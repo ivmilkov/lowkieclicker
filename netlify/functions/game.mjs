@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
 const MAX_BODY = 600_000;           // символов в JSON сохранения
+const HISTORY_KEEP = 500;            // сколько последних записей истории лежит в основном сохранении (вся история — в отдельном хранилище)
 const MAX_AUTH_AGE = 3 * 24 * 3600; // initData старше 3 суток не принимаем
 // Telegram id админов. Можно переопределить переменной ADMIN_IDS на Netlify (через запятую)
 const ADMIN_IDS = (process.env.ADMIN_IDS || '8165411879').split(',').map(s => s.trim()).filter(Boolean);
@@ -377,7 +378,7 @@ function pushHistory(st, title, amount, type = 'income') {
   if (!Array.isArray(st.history)) st.history = [];
   const entry = { id: Date.now() + String(Math.random()).slice(2, 6), type, title, amount, date: Date.now() };
   st.history.unshift(entry);
-  if (st.history.length > 500) st.history.length = 500;
+  if (st.history.length > HISTORY_KEEP) st.history.length = HISTORY_KEEP;
   return entry;
 }
 // две отдельные записи: монеты и прибыль в час (в списке монеты идут выше)
@@ -386,6 +387,42 @@ function pushRefHistory(st, title) {
   pushHistory(st, title, `+${REF_COINS.toLocaleString('ru-RU')} монет`);
 }
 function addCoins(st, n) { st.total = Math.min(MAX_VALUE, Math.max(0, (Number(st.total) || 0) + n)); }
+
+// =====================================================================
+// ПОЛНАЯ ИСТОРИЯ ОПЕРАЦИЙ: отдельное хранилище, без ограничения по числу записей.
+// У каждого игрока записи лежат «страницами» по HIST_CHUNK штук: старые страницы больше не меняются,
+// дописывается только последняя, поэтому история может расти бесконечно и не тормозит основное сохранение.
+// =====================================================================
+const HIST_CHUNK = 400;
+const HIST_ADD_MAX = 300;           // сколько записей принимаем за один запрос
+function histClean(e) {
+  if (!e || typeof e !== 'object') return null;
+  const id = String(e.id == null ? '' : e.id).replace(/[^\w.-]/g, '').slice(0, 40);
+  const date = Number(e.date);
+  if (!id || !Number.isFinite(date) || date <= 0) return null;
+  const strip = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').slice(0, n);
+  return { id, type: e.type === 'income' || e.type === 'spend' ? e.type : 'info', title: strip(e.title, 120), amount: strip(e.amount, 60), date: Math.floor(date) };
+}
+async function histAdd(hs, uid, items) {
+  const mk = `m_${uid}`;
+  const meta = (await hs.get(mk, { type: 'json' })) || { n: 0, total: 0 };
+  let n = Number(meta.n) || 0;
+  const cur = n > 0 ? ((await hs.get(`c_${uid}_${n - 1}`, { type: 'json' })) || { items: [] }) : { items: [] };
+  const prev = n > 1 ? ((await hs.get(`c_${uid}_${n - 2}`, { type: 'json' })) || { items: [] }) : { items: [] };
+  const seen = new Set(cur.items.concat(prev.items).map(x => x.id));
+  const fresh = items.filter(x => !seen.has(x.id)).sort((a, b) => a.date - b.date);
+  if (!fresh.length) return 0;
+  if (n === 0) n = 1;
+  const pages = new Map([[n - 1, cur]]);
+  for (const it of fresh) {
+    let c = pages.get(n - 1);
+    if (c.items.length >= HIST_CHUNK) { n++; c = { items: [] }; pages.set(n - 1, c); }
+    c.items.push(it);
+  }
+  for (const [i, c] of pages) await hs.setJSON(`c_${uid}_${i}`, c);
+  await hs.setJSON(mk, { n, total: (Number(meta.total) || 0) + fresh.length });
+  return fresh.length;
+}
 
 const notifyAdmins = (origin, text) =>
   Promise.all(ADMIN_IDS.map(id => tgSend(id, text, 'открыть тикеты', origin + '/admin.html?tab=tickets')));
@@ -552,6 +589,7 @@ export default async (req) => {
   const tfStore = getStore({ name: 'ticketfiles', consistency: 'strong' });
   const refStore = getStore({ name: 'referrals', consistency: 'strong' });
   const bankStore = getStore({ name: 'bank', consistency: 'strong' });
+  const histStore = getStore({ name: 'history', consistency: 'strong' });
   const origin = new URL(req.url).origin;
   // ---------- админские запросы (только для ADMIN_IDS) ----------
   if (typeof body.action === 'string' && body.action.startsWith('admin_')) {
@@ -1036,6 +1074,23 @@ export default async (req) => {
     }
 
     return json({ error: 'unknown_action' }, 400);
+  }
+
+  if (body.action === 'hist_add') {
+    const items = (Array.isArray(body.items) ? body.items.slice(0, HIST_ADD_MAX) : []).map(histClean).filter(Boolean);
+    const added = items.length ? await histAdd(histStore, String(user.id), items) : 0;
+    return json({ ok: true, added });
+  }
+
+  if (body.action === 'hist_page') {
+    const uidH = String(user.id);
+    const meta = (await histStore.get(`m_${uidH}`, { type: 'json' })) || { n: 0, total: 0 };
+    const n = Number(meta.n) || 0;
+    let idx = body.idx == null ? n - 1 : Math.floor(Number(body.idx));
+    if (!Number.isFinite(idx) || idx > n - 1) idx = n - 1;
+    if (idx < 0) return json({ items: [], idx: -1, n, total: Number(meta.total) || 0 });
+    const page = (await histStore.get(`c_${uidH}_${idx}`, { type: 'json' })) || { items: [] };
+    return json({ items: page.items, idx, n, total: Number(meta.total) || 0 });
   }
 
   if (body.action === 'top') {
