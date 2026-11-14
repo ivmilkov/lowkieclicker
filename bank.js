@@ -394,7 +394,7 @@
     var transfer = M.mode === "transfer";
     byId("bkMoneyDesc").textContent = transfer
       ? ""
-      : "Запрос увидят только игроки с доступом к банку. Платить или нет, решает он сам";
+      : "";
   }
 
   function resetMoney(mode) {
