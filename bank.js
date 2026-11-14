@@ -393,7 +393,7 @@
   function describeMode() {
     var transfer = M.mode === "transfer";
     byId("bkMoneyDesc").textContent = transfer
-      ? "Перевод придёт сразу, даже если у игрока нет доступа к банку"
+      ? ""
       : "Запрос увидят только игроки с доступом к банку. Платить или нет, решает он сам";
   }
 
